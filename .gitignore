@@ -1,0 +1,9 @@
+*.d
+Master/Debug/suart/BBuart.o
+*.o
+Master/Debug/Master.srec
+*.atsuo
+Master/Debug/Makefile
+*.map
+Master/Debug/Master.lss
+*.eep

@@ -468,9 +468,9 @@ void IthoCC1101::parseMessage1()
 	
 	//copy device id from packet
 	// TODO: verify if this really is this the device id
-	ithoPacket.deviceId[0] = packet1.data[3];
-	ithoPacket.deviceId[1] = packet1.data[4];
-	ithoPacket.deviceId[2] = packet1.data[5] & 0b11111110;	//last bit is part of command
+	ithoPacket.deviceId[0] = packet1.data[2];
+	ithoPacket.deviceId[1] = packet1.data[3];
+	ithoPacket.deviceId[2] = packet1.data[4] & 0b11111110;	//last bit is part of command
 	
 	//copy command data from packet
 	//message1 command starts at index 5, last bit!
@@ -548,35 +548,37 @@ void IthoCC1101::createMessage1(IthoPacket *packet)
 {
 	uint8_t bytes[20];
 	
+	//fixed
 	bytes[0] = 170;
 	bytes[1] = 170;
 	bytes[2] = 170;
 	bytes[3] = 173;
-	bytes[4] = 51;
-	bytes[5] = 83;
 	
-	//device id
+	//device id ??
+	bytes[4] = 51;
+	bytes[5] = 83;	
 	bytes[6] = packet->deviceId[0];
 	bytes[7] = packet->deviceId[1];
 	bytes[8] = packet->deviceId[2];
+	bytes[9] = 204;
 
 	//command
 	uint8_t *commandBytes = getMessage1CommandBytes(packet->command);
-	bytes[8] = bytes[8] & commandBytes[0];	//only last bit is set
-	bytes[9] = commandBytes[1];
-	bytes[10] = commandBytes[2];
-	bytes[11] = commandBytes[3];
-	bytes[12] = commandBytes[4];
-	bytes[13] = commandBytes[5];
-	bytes[14] = commandBytes[6];
+	bytes[9] = bytes[9] & commandBytes[0];	//only last bit is set
+	bytes[10] = commandBytes[1];
+	bytes[11] = commandBytes[2];
+	bytes[12] = commandBytes[3];
+	bytes[13] = commandBytes[4];
+	bytes[14] = commandBytes[5];
+	bytes[15] = commandBytes[6];
 	
-	bytes[15] = 0;
+	//fixed
 	bytes[16] = 170;
 	bytes[17] = 171;
 	
-	//previous command
-	bytes[18] = 0;
-	bytes[19] = 0;
+	//previous command (not important)
+	bytes[18] = 85;
+	bytes[19] = 77;
 }
 
 uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
