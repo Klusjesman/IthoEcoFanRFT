@@ -422,11 +422,12 @@ bool IthoCC1101::isValidMessage1()
 
 bool IthoCC1101::isValidMessage2()
 {
-	if (packet2.data[12] != 170)
+	/*
+	if (packet2.data[12] != 170) //found out this van be 169 at other remote
 	{
 		return false;
 	}
-	
+	*/
 	/*
 	for (int i=0; i<packet2.length;i++)
 	{
@@ -579,6 +580,73 @@ void IthoCC1101::createMessage1(IthoPacket *packet)
 	//previous command (not important)
 	bytes[18] = 85;
 	bytes[19] = 77;
+}
+
+void IthoCC1101::createMessage2(IthoPacket *packet)
+{
+	uint8_t bytes[50];
+	
+	//fixed
+	bytes[0] = 170;
+	bytes[1] = 170;
+	bytes[2] = 170;
+	bytes[3] = 170;
+	bytes[4] = 170;
+	bytes[5] = 170;
+	bytes[6] = 170;				
+	bytes[7] = 171;	
+	bytes[8] = 254;				
+	bytes[9] = 0;				
+	bytes[10] = 179;				
+	bytes[11] = 42;				
+	bytes[12] = 171;				
+	bytes[13] = 42;				
+	bytes[14] = 149;				
+	bytes[15] = 154;				
+	
+	//device id???
+	bytes[16] = 0;
+	bytes[17] = 0;
+	bytes[18] = 0;
+	bytes[19] = 0;
+	bytes[20] = 0;				
+	bytes[21] = 0;
+	bytes[22] = 0;
+	bytes[23] = 0;
+	
+	//counter1
+	bytes[24] = 0;
+	bytes[25] = 0;
+	bytes[26] = 0;
+
+	//command
+	bytes[27] = 0;
+	bytes[28] = 0;
+	bytes[29] = 0;
+	bytes[30] = 0;
+	bytes[31] = 0;
+	bytes[32] = 0;
+	bytes[33] = 0;
+	bytes[34] = 0;
+	bytes[35] = 0;
+	bytes[36] = 0;
+	bytes[37] = 0;
+	bytes[38] = 0;
+	bytes[39] = 0;	
+	bytes[40] = 0;
+
+	//counter2
+	bytes[41] = 0;
+	bytes[42] = 0;
+	bytes[43] = 0;
+
+	//fixed
+	bytes[44] = 172;
+	bytes[45] = 170;
+	bytes[46] = 170;
+	bytes[47] = 170;
+	bytes[48] = 170;
+	bytes[49] = 170;
 }
 
 uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)

@@ -7,3 +7,5 @@ Master/Debug/Makefile
 *.map
 Master/Debug/Master.lss
 *.eep
+*.hex
+Master/Debug/Master.elf

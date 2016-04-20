@@ -88,6 +88,7 @@ class IthoCC1101 : public CC1101
 		void parseMessage2();
 		
 		void createMessage1(IthoPacket *packet);
+		void createMessage2(IthoPacket *packet);
 		uint8_t* getMessage1CommandBytes(IthoCommand command);
 
 }; //IthoCC1101
