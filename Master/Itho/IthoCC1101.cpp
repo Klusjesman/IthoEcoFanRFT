@@ -442,6 +442,21 @@ bool IthoCC1101::isValidMessage2()
 
 void IthoCC1101::parseReceivedPackets()
 {
+	//parseMessage1();
+
+/*
+is the rft using both messages, maybe only one is required, probably the second one
+- maybe the first message is used for compatibility with older/different systems only?
+*/
+
+	if (isMessage2Required)
+	{
+		parseMessage2();
+	}
+}
+
+void IthoCC1101::parseMessage1()
+{
 	bool isFullCommand = true;
 	bool isMediumCommand = true;
 	bool isLowCommand = true;
@@ -455,7 +470,7 @@ void IthoCC1101::parseReceivedPackets()
 	// TODO: verify if this really is this the device id
 	ithoPacket.deviceId[0] = packet1.data[3];
 	ithoPacket.deviceId[1] = packet1.data[4];
-	ithoPacket.deviceId[2] = packet1.data[5] & 0b11111110;	//last bit is part of command	
+	ithoPacket.deviceId[2] = packet1.data[5] & 0b11111110;	//last bit is part of command
 	
 	//copy command data from packet
 	//message1 command starts at index 5, last bit!
@@ -490,20 +505,43 @@ void IthoCC1101::parseReceivedPackets()
 	if (isTimer2Command) ithoPacket.command = timer2;
 	if (isTimer3Command) ithoPacket.command = timer3;
 	if (isJoinCommand) ithoPacket.command = join;
-	if (isLeaveCommand) ithoPacket.command = leave;
-	
-	//determine previous command
-	/*
-	debug.serOutInt(packet1.data[14]);
-	debug.serOut("\n");
-	debug.serOutInt(packet1.data[15]);
-	debug.serOut("\n");
-	*/
-	if (isMessage2Required)
+	if (isLeaveCommand) ithoPacket.command = leave;	
+}
+
+void IthoCC1101::parseMessage2()
+{
+	bool isFullCommand = true;
+	bool isMediumCommand = true;
+	bool isLowCommand = true;
+	bool isTimer1Command = true;
+	bool isTimer2Command = true;
+	bool isTimer3Command = true;
+	bool isJoinCommand = true;
+	bool isLeaveCommand = true;
+		
+	//match received commandBytes with known command bytes
+	for (int i=0; i<14; i++)
 	{
-		//message2 parsing
-		//..
-	}
+		if (packet2.data[19+i] != ithoMessage2FullCommandBytes[i]) isFullCommand = false;
+		if (packet2.data[19+i] != ithoMessage2MediumCommandBytes[i]) isMediumCommand = false;
+		if (packet2.data[19+i] != ithoMessage2LowCommandBytes[i]) isLowCommand = false;
+		if (packet2.data[19+i] != ithoMessage2Timer1CommandBytes[i]) isTimer1Command = false;
+		if (packet2.data[19+i] != ithoMessage2Timer2CommandBytes[i]) isTimer2Command = false;
+		if (packet2.data[19+i] != ithoMessage2Timer3CommandBytes[i]) isTimer3Command = false;
+		if (packet2.data[19+i] != ithoMessage2JoinCommandBytes[i]) isJoinCommand = false;
+		if (packet2.data[19+i] != ithoMessage2LeaveCommandBytes[i]) isLeaveCommand = false;
+	}	
+		
+	//determine command
+	ithoPacket.command = unknown;
+	if (isFullCommand) ithoPacket.command = full;
+	if (isMediumCommand) ithoPacket.command = medium;
+	if (isLowCommand) ithoPacket.command = low;
+	if (isTimer1Command) ithoPacket.command = timer1;
+	if (isTimer2Command) ithoPacket.command = timer2;
+	if (isTimer3Command) ithoPacket.command = timer3;
+	if (isJoinCommand) ithoPacket.command = join;
+	if (isLeaveCommand) ithoPacket.command = leave;		
 }
 
 void IthoCC1101::createMessage1(IthoPacket *packet)

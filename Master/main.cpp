@@ -44,7 +44,7 @@ int main(void)
 	rf.initReceive();
 	
 	//ignore Itho message2
-	rf.setMessage2Requirement(false);
+	//rf.setMessage2Requirement(false);
 	
 	
 	debug.serOut("start\n");

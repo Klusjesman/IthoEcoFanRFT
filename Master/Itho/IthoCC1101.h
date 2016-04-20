@@ -25,18 +25,17 @@ const uint8_t ithoMessage1Timer3CommandBytes[] = {1,83,83,82,173,82,180};
 const uint8_t ithoMessage1JoinCommandBytes[] = {0,170,171,85,84,202,180};	
 const uint8_t ithoMessage1LeaveCommandBytes[] = {0,170,173,85,83,43,84};	
 
-//message 1 previous commands
-//TODO
-/*
-const uint8_t ithoMessage1PreviousFullCommandBytes[] = {1,84};
-const uint8_t ithoMessage1PreviousMediumCommandBytes[] = {1,84};
-const uint8_t ithoMessage1PreviousLowCommandBytes[] = {1,84};
-const uint8_t ithoMessage1PreviousTimer1CommandBytes[] = {1,83};
-const uint8_t ithoMessage1PreviousTimer2CommandBytes[] = {1,83};
-const uint8_t ithoMessage1PreviousTimer3CommandBytes[] = {1,83};
-const uint8_t ithoMessage1PreviousJoinCommandBytes[] = {0,170};
-const uint8_t ithoMessage1PreviousLeaveCommandBytes[] = {0,170};
-*/
+//message 2 commands
+const uint8_t ithoMessage2FullCommandBytes[] = {89,150,170,165,101,90,150,85,149,101,89,102,85,150};
+const uint8_t ithoMessage2MediumCommandBytes[] = {89,150,170,165,101,90,150,85,149,101,90,150,85,150};
+const uint8_t ithoMessage2LowCommandBytes[] = {89,150,170,165,101,90,150,85,149,101,89,150,85,150};
+const uint8_t ithoMessage2Timer1CommandBytes[] = {89,150,170,169,101,90,150,85,149,101,89,86,85,153};
+const uint8_t ithoMessage2Timer2CommandBytes[] = {89,150,170,169,101,90,150,85,149,101,89,86,149,150};
+const uint8_t ithoMessage2Timer3CommandBytes[] = {89,150,170,169,101,90,150,85,149,101,89,86,149,154};
+const uint8_t ithoMessage2JoinCommandBytes[] = {90,170,90,165,165,89,106,85,149,102,89,150,170,165};
+const uint8_t ithoMessage2LeaveCommandBytes[] = {90,170,90,165,165,89,166,85,149,105,90,170,90,165};
+
+
 
 typedef enum IthoReceiveStates
 {
@@ -85,6 +84,8 @@ class IthoCC1101 : public CC1101
 		void initReceiveMessage2();	
 		
 		void parseReceivedPackets();
+		void parseMessage1();
+		void parseMessage2();
 		
 		void createMessage1(IthoPacket *packet);
 		uint8_t* getMessage1CommandBytes(IthoCommand command);
