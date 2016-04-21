@@ -26,7 +26,7 @@ class IthoPacket
 		uint8_t deviceId[3];	//not sure of this is correct
 		IthoCommand command;
 		
-		uint8_t counter1; //0-127
+		uint8_t counter1; //0-255
 		
 };
 
