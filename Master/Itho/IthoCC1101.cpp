@@ -510,10 +510,20 @@ void IthoCC1101::parseMessage2()
 	bool isLeaveCommand = true;
 		
 	//counter1
-	uint8_t row0 = packet2.data[16];// & 0b11111100;	//2 bits are part of command
+	uint8_t row0 = packet2.data[16];
 	uint8_t row1 = packet2.data[17];
 	uint8_t row2 = packet2.data[18] & 0b11110000;	//4 bits are part of command
 	ithoPacket.counter1 = counter1ToByte(row0, row1, row2);
+	
+	uint8_t a,b,c;
+	counter1ToBytes(ithoPacket.counter1,&a,&b,&c);
+	
+	if ((a != row0) || (b != row1) || (c != row2))
+	{
+		debug.serOutInt(row0); debug.serOut("-"); debug.serOutInt(a); debug.serOut("\n");
+		debug.serOutInt(row1); debug.serOut("-"); debug.serOutInt(b); debug.serOut("\n");
+		debug.serOutInt(row2); debug.serOut("-"); debug.serOutInt(c); debug.serOut("\n");
+	}
 	
 	//copy command data from packet
 	uint8_t commandBytes[15];
@@ -717,6 +727,7 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 	}
 }
 
+//calculate 0-255 number out of 3 counter1 bytes
 uint8_t IthoCC1101::counter1ToByte(uint8_t row0, uint8_t row1, uint8_t row2)
 {
 	//return byte with value 0-255
@@ -732,18 +743,15 @@ uint8_t IthoCC1101::counter1ToByte(uint8_t row0, uint8_t row1, uint8_t row2)
 	return result;
 }
 
+//calculate 3 counter1 bytes out of 0-255 number
 void IthoCC1101::counter1ToBytes(uint8_t counter1, uint8_t *row0, uint8_t *row1, uint8_t *row2)
 {
-	/************************************************************************/
-	/* this function is not tested!                                                                     */
-	/************************************************************************/
-	
-	*row0 = counter1Bytes0a[(counter1 / 128)] & 0b00000011;	//last 2 bits only
-	*row0 &= counter1Bytes0b[(counter1 / 16)] & 0b11111100;	//first 6 bits
+	*row0 = counter1Bytes0a[(counter1 / 128)] | counter1Bytes0b[(counter1 % 128) / 16];
 	*row2 = counter1Bytes2[(counter1 % 16) / 8];
 	*row1 = counter1Bytes1[(counter1 % 16) % 8];
 }
 
+//lookup value in array
 uint8_t IthoCC1101::getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value)
 {
 	for (uint8_t i=0; i<length; i++)
