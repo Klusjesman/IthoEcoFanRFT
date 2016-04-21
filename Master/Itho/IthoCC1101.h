@@ -26,15 +26,20 @@ const uint8_t ithoMessage1JoinCommandBytes[] = {0,170,171,85,84,202,180};
 const uint8_t ithoMessage1LeaveCommandBytes[] = {0,170,173,85,83,43,84};	
 
 //message 2 commands
-const uint8_t ithoMessage2FullCommandBytes[] = {89,150,170,165,101,90,150,85,149,101,89,102,85,150};
-const uint8_t ithoMessage2MediumCommandBytes[] = {89,150,170,165,101,90,150,85,149,101,90,150,85,150};
-const uint8_t ithoMessage2LowCommandBytes[] = {89,150,170,165,101,90,150,85,149,101,89,150,85,150};
-const uint8_t ithoMessage2Timer1CommandBytes[] = {89,150,170,169,101,90,150,85,149,101,89,86,85,153};
-const uint8_t ithoMessage2Timer2CommandBytes[] = {89,150,170,169,101,90,150,85,149,101,89,86,149,150};
-const uint8_t ithoMessage2Timer3CommandBytes[] = {89,150,170,169,101,90,150,85,149,101,89,86,149,154};
-const uint8_t ithoMessage2JoinCommandBytes[] = {90,170,90,165,165,89,106,85,149,102,89,150,170,165};
-const uint8_t ithoMessage2LeaveCommandBytes[] = {90,170,90,165,165,89,166,85,149,105,90,170,90,165};
+const uint8_t ithoMessage2FullCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,89,102,85,150};
+const uint8_t ithoMessage2MediumCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,90,150,85,150};
+const uint8_t ithoMessage2LowCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,89,150,85,150};
+const uint8_t ithoMessage2Timer1CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,85,153};
+const uint8_t ithoMessage2Timer2CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,149,150};
+const uint8_t ithoMessage2Timer3CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,149,154};
+const uint8_t ithoMessage2JoinCommandBytes[] = {9,90,170,90,165,165,89,106,85,149,102,89,150,170,165};
+const uint8_t ithoMessage2LeaveCommandBytes[] = {9,90,170,90,165,165,89,166,85,149,105,90,170,90,165};
 
+//message 2, counter 1
+const uint8_t counter1Bytes0a[] = {1,2};
+const uint8_t counter1Bytes0b[] = {84,148,100,164,88,152,104,168};
+const uint8_t counter1Bytes1[] = {149,165,153,169,150,166,154,170};
+const uint8_t counter1Bytes2[] = {96,160};
 
 
 typedef enum IthoReceiveStates
@@ -90,6 +95,11 @@ class IthoCC1101 : public CC1101
 		void createMessage1(IthoPacket *packet);
 		void createMessage2(IthoPacket *packet);
 		uint8_t* getMessage1CommandBytes(IthoCommand command);
+		uint8_t* getMessage2CommandBytes(IthoCommand command);
+		
+		uint8_t getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value);
+		void counter1ToBytes(uint8_t counter1, uint8_t *row0, uint8_t *row1, uint8_t *row2);
+		uint8_t counter1ToByte(uint8_t row0, uint8_t row1, uint8_t row2);
 
 }; //IthoCC1101
 

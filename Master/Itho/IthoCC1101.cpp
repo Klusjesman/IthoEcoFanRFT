@@ -422,28 +422,17 @@ bool IthoCC1101::isValidMessage1()
 
 bool IthoCC1101::isValidMessage2()
 {
-	/*
-	if (packet2.data[12] != 170) //found out this van be 169 at other remote
+	if (packet2.data[37] != 170) 
 	{
 		return false;
 	}
-	*/
-	/*
-	for (int i=0; i<packet2.length;i++)
-	{
-		debug.serOutInt(packet2.data[i]);
-		debug.serOut("\n");
-	}
-			
-	debug.serOut("-----------------");
-	*/
 	
 	return true;
 }
 
 void IthoCC1101::parseReceivedPackets()
 {
-	//parseMessage1();
+	parseMessage1();
 
 /*
 is the rft using both messages, maybe only one is required, probably the second one
@@ -520,17 +509,41 @@ void IthoCC1101::parseMessage2()
 	bool isJoinCommand = true;
 	bool isLeaveCommand = true;
 		
+	//counter1
+	uint8_t row0 = packet2.data[16];// & 0b11111100;	//2 bits are part of command
+	uint8_t row1 = packet2.data[17];
+	uint8_t row2 = packet2.data[18] & 0b11110000;	//4 bits are part of command
+	ithoPacket.counter1 = counter1ToByte(row0, row1, row2);
+	
+	//copy command data from packet
+	uint8_t commandBytes[15];
+	commandBytes[0] = packet2.data[18] & 0b00001111;	//4 bits are part of counter1
+	commandBytes[1] = packet2.data[19];
+	commandBytes[2] = packet2.data[20];
+	commandBytes[3] = packet2.data[21];
+	commandBytes[4] = packet2.data[22];		
+	commandBytes[5] = packet2.data[23];		
+	commandBytes[6] = packet2.data[24];		
+	commandBytes[7] = packet2.data[25];		
+	commandBytes[8] = packet2.data[26];		
+	commandBytes[9] = packet2.data[27];		
+	commandBytes[10] = packet2.data[28];		
+	commandBytes[11] = packet2.data[29];
+	commandBytes[12] = packet2.data[30];		
+	commandBytes[13] = packet2.data[31];		
+	commandBytes[14] = packet2.data[32];				
+						
 	//match received commandBytes with known command bytes
-	for (int i=0; i<14; i++)
+	for (int i=0; i<15; i++)
 	{
-		if (packet2.data[19+i] != ithoMessage2FullCommandBytes[i]) isFullCommand = false;
-		if (packet2.data[19+i] != ithoMessage2MediumCommandBytes[i]) isMediumCommand = false;
-		if (packet2.data[19+i] != ithoMessage2LowCommandBytes[i]) isLowCommand = false;
-		if (packet2.data[19+i] != ithoMessage2Timer1CommandBytes[i]) isTimer1Command = false;
-		if (packet2.data[19+i] != ithoMessage2Timer2CommandBytes[i]) isTimer2Command = false;
-		if (packet2.data[19+i] != ithoMessage2Timer3CommandBytes[i]) isTimer3Command = false;
-		if (packet2.data[19+i] != ithoMessage2JoinCommandBytes[i]) isJoinCommand = false;
-		if (packet2.data[19+i] != ithoMessage2LeaveCommandBytes[i]) isLeaveCommand = false;
+		if (commandBytes[i] != ithoMessage2FullCommandBytes[i]) isFullCommand = false;
+		if (commandBytes[i] != ithoMessage2MediumCommandBytes[i]) isMediumCommand = false;
+		if (commandBytes[i] != ithoMessage2LowCommandBytes[i]) isLowCommand = false;
+		if (commandBytes[i] != ithoMessage2Timer1CommandBytes[i]) isTimer1Command = false;
+		if (commandBytes[i] != ithoMessage2Timer2CommandBytes[i]) isTimer2Command = false;
+		if (commandBytes[i] != ithoMessage2Timer3CommandBytes[i]) isTimer3Command = false;
+		if (commandBytes[i] != ithoMessage2JoinCommandBytes[i]) isJoinCommand = false;
+		if (commandBytes[i] != ithoMessage2LeaveCommandBytes[i]) isLeaveCommand = false;
 	}	
 		
 	//determine command
@@ -542,11 +555,16 @@ void IthoCC1101::parseMessage2()
 	if (isTimer2Command) ithoPacket.command = timer2;
 	if (isTimer3Command) ithoPacket.command = timer3;
 	if (isJoinCommand) ithoPacket.command = join;
-	if (isLeaveCommand) ithoPacket.command = leave;		
+	if (isLeaveCommand) ithoPacket.command = leave;	
 }
 
 void IthoCC1101::createMessage1(IthoPacket *packet)
 {
+	/************************************************************************/
+	/* this function is not tested!                                                                     */
+	/************************************************************************/
+
+	
 	uint8_t bytes[20];
 	
 	//fixed
@@ -565,7 +583,7 @@ void IthoCC1101::createMessage1(IthoPacket *packet)
 
 	//command
 	uint8_t *commandBytes = getMessage1CommandBytes(packet->command);
-	bytes[9] = bytes[9] & commandBytes[0];	//only last bit is set
+	bytes[9] = bytes[9] | commandBytes[0];	//only last bit is set
 	bytes[10] = commandBytes[1];
 	bytes[11] = commandBytes[2];
 	bytes[12] = commandBytes[3];
@@ -584,6 +602,10 @@ void IthoCC1101::createMessage1(IthoPacket *packet)
 
 void IthoCC1101::createMessage2(IthoPacket *packet)
 {
+	/************************************************************************/
+	/* this function is not tested!                                                                     */
+	/************************************************************************/
+	
 	uint8_t bytes[50];
 	
 	//fixed
@@ -615,25 +637,25 @@ void IthoCC1101::createMessage2(IthoPacket *packet)
 	bytes[23] = 0;
 	
 	//counter1
-	bytes[24] = 0;
-	bytes[25] = 0;
-	bytes[26] = 0;
+	counter1ToBytes(packet->counter1, &bytes[24], &bytes[25], &bytes[26]);
 
 	//command
-	bytes[27] = 0;
-	bytes[28] = 0;
-	bytes[29] = 0;
-	bytes[30] = 0;
-	bytes[31] = 0;
-	bytes[32] = 0;
-	bytes[33] = 0;
-	bytes[34] = 0;
-	bytes[35] = 0;
-	bytes[36] = 0;
-	bytes[37] = 0;
-	bytes[38] = 0;
-	bytes[39] = 0;	
-	bytes[40] = 0;
+	uint8_t *commandBytes = getMessage2CommandBytes(packet->command);
+	bytes[26] = bytes[26] | commandBytes[0];
+	bytes[27] = commandBytes[1];
+	bytes[28] = commandBytes[2];
+	bytes[29] = commandBytes[3];
+	bytes[30] = commandBytes[4];
+	bytes[31] = commandBytes[5];
+	bytes[32] = commandBytes[6];
+	bytes[33] = commandBytes[7];
+	bytes[34] = commandBytes[8];
+	bytes[35] = commandBytes[9];
+	bytes[36] = commandBytes[10];
+	bytes[37] = commandBytes[11];
+	bytes[38] = commandBytes[12];
+	bytes[39] = commandBytes[13];	
+	bytes[40] = commandBytes[14];
 
 	//counter2
 	bytes[41] = 0;
@@ -670,4 +692,64 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 		case leave:
 			return (uint8_t*)&ithoMessage1LeaveCommandBytes[0];
 	}	
+}
+
+uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
+{
+	switch (command)
+	{
+		case full:
+			return (uint8_t*)&ithoMessage2FullCommandBytes[0];
+		case medium:
+			return (uint8_t*)&ithoMessage2FullCommandBytes[0];
+		case low:
+			return (uint8_t*)&ithoMessage2MediumCommandBytes[0];
+		case timer1:
+			return (uint8_t*)&ithoMessage2Timer1CommandBytes[0];
+		case timer2:
+			return (uint8_t*)&ithoMessage2Timer2CommandBytes[0];
+		case timer3:
+			return (uint8_t*)&ithoMessage2Timer3CommandBytes[0];
+		case join:
+			return (uint8_t*)&ithoMessage2JoinCommandBytes[0];
+		case leave:
+			return (uint8_t*)&ithoMessage2LeaveCommandBytes[0];
+	}
+}
+
+uint8_t IthoCC1101::counter1ToByte(uint8_t row0, uint8_t row1, uint8_t row2)
+{
+	//return byte with value 0-255
+	uint8_t result;
+	
+	uint8_t indexRow0a = getCounterIndex(&counter1Bytes0a[0],2,row0 & 0b00000011);	//last 2 bits only
+	uint8_t indexRow0b = getCounterIndex(&counter1Bytes0b[0],8,row0 & 0b11111100);	//first 6 bits
+	uint8_t indexRow1 = getCounterIndex(&counter1Bytes1[0],8,row1);
+	uint8_t indexRow2 = getCounterIndex(&counter1Bytes2[0],2,row2);
+	
+	result = (indexRow0a * 128) + (indexRow0b * 16) + (indexRow2 * 8) + indexRow1;
+	
+	return result;
+}
+
+void IthoCC1101::counter1ToBytes(uint8_t counter1, uint8_t *row0, uint8_t *row1, uint8_t *row2)
+{
+	/************************************************************************/
+	/* this function is not tested!                                                                     */
+	/************************************************************************/
+	
+	*row0 = counter1Bytes0a[(counter1 / 128)] & 0b00000011;	//last 2 bits only
+	*row0 &= counter1Bytes0b[(counter1 / 16)] & 0b11111100;	//first 6 bits
+	*row2 = counter1Bytes2[(counter1 % 16) / 8];
+	*row1 = counter1Bytes1[(counter1 % 16) % 8];
+}
+
+uint8_t IthoCC1101::getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value)
+{
+	for (uint8_t i=0; i<length; i++)
+		if (arr[i] == value)
+			return i;
+	
+	//-1 should never be returned!
+	return -1;
 }

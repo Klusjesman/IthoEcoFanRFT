@@ -9,3 +9,4 @@ Master/Debug/Master.lss
 *.eep
 *.hex
 Master/Debug/Master.elf
+Master/Debug/makedep.mk

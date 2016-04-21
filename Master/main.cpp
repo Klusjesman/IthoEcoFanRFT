@@ -21,7 +21,8 @@ TODO
 #include "Itho/IthoCC1101.h"
 #include "itho/IthoPacket.h"
 
-	
+
+
 int main(void)
 {
 	IthoPacket packet;
@@ -57,15 +58,10 @@ int main(void)
 		{
 			packet = rf.getLastPacket();
 
-			//show device id
-			debug.serOut("device id: ");
-			
-			for (int i=0;i<3;i++)
-			{
-				debug.serOutIntToHex(packet.deviceId[i]);
-				debug.serOut(",");
-			}
-			debug.serOut("\n");
+			//show counter1
+			debug.serOut("counter1=");
+			debug.serOutInt(packet.counter1);
+			debug.serOut(", ");
 			
 			//show command
 			switch (packet.command)
