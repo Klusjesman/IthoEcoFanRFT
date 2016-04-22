@@ -860,9 +860,9 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 		case full:
 			return (uint8_t*)&ithoMessage1FullCommandBytes[0];
 		case medium:
-			return (uint8_t*)&ithoMessage1FullCommandBytes[0];
-		case low:
 			return (uint8_t*)&ithoMessage1MediumCommandBytes[0];
+		case low:
+			return (uint8_t*)&ithoMessage1LowCommandBytes[0];
 		case timer1:
 			return (uint8_t*)&ithoMessage1Timer1CommandBytes[0];
 		case timer2:
