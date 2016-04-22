@@ -7,7 +7,7 @@
 
 
 //do not change enum because they are used in calculations!
-typedef enum IthoCommand
+typedef enum IthoCommand 
 {
 	unknown = 0,
 		
@@ -20,7 +20,7 @@ typedef enum IthoCommand
 	
 	timer3 = 41,
 	timer2 = 51,
-	timer1 = 61,
+	timer1 = 61
 };
 
 

@@ -41,9 +41,8 @@ const uint8_t counterBytes24b[] = {84,148,100,164,88,152,104,168};
 const uint8_t counterBytes25[] = {149,165,153,169,150,166,154,170};
 const uint8_t counterBytes26[] = {96,160};
 const uint8_t counterBytes41[] = {5, 10, 6, 9};
-const uint8_t counterBytes42[] = {90, 170, 106, 154};
+const uint8_t counterBytes42[] = {170, 106, 154, 90};
 const uint8_t counterBytes43[] = {154, 90, 166, 102, 150, 86, 170, 106};
-
 
 typedef enum IthoReceiveStates
 {

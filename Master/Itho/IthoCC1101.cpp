@@ -814,15 +814,39 @@ uint8_t IthoCC1101::calculateMessage2Byte41(uint8_t counter, IthoCommand command
 
 uint8_t IthoCC1101::calculateMessage2Byte42(uint8_t counter, IthoCommand command)
 {
+	//TODO: this function needs to be simplified, maybe IthoCommand enum can be used for this!
 	uint8_t result;
 	
-	if (command == join || command == leave)
+	switch (command)
 	{
-		counter = 1;
-	}
-	else
-	{
-		counter += command;
+		case low:
+			counter -= 29;
+			break;
+					
+		case medium:
+			counter -= 28;
+			break;
+					
+		case full:
+			counter -= 27;
+			break;
+					
+		case timer1:
+			counter -= 23;
+			break;
+					
+		case timer2:
+			counter -= 13;
+			break;
+					
+		case timer3:
+			counter -= 3;
+			break;
+					
+		case join:
+		case leave:
+			counter = 193;
+			break;
 	}
 
 	result = counterBytes42[counter / 64];
