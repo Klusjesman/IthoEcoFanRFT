@@ -188,8 +188,8 @@ class CC1101
 		void writeBurstRegister(uint8_t address, uint8_t* data, uint8_t length);
 		void readBurstRegister(uint8_t* buffer, uint8_t address, uint8_t length);
 		
-		bool sendData(CC1101PACKET packet);
-		uint8_t receiveData(CC1101PACKET* packet, uint8_t length);
+		bool sendData(CC1101Packet packet);
+		uint8_t receiveData(CC1101Packet* packet, uint8_t length);
 	
 		void printRegisters();
 		void printRegister(uint8_t address, uint8_t registerType, char *name);	

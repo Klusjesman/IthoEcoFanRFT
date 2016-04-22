@@ -149,7 +149,7 @@ void CC1101::readBurstRegister(uint8_t* buffer, uint8_t address, uint8_t length)
 	spi->deselect();
 }
 
-uint8_t CC1101::receiveData(CC1101PACKET* packet, uint8_t length)
+uint8_t CC1101::receiveData(CC1101Packet* packet, uint8_t length)
 {
 	uint8_t rxBytes = readRegisterWithSyncProblem(CC1101_RXBYTES, CC1101_STATUS_REGISTER);
 	rxBytes = rxBytes & CC1101_BITS_RX_BYTES_IN_FIFO;
@@ -195,7 +195,7 @@ uint8_t CC1101::receiveData(CC1101PACKET* packet, uint8_t length)
 	return packet->length;
 }
 
-bool CC1101::sendData(CC1101PACKET packet)
+bool CC1101::sendData(CC1101Packet packet)
 {
 }
 

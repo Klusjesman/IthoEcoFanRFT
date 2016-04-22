@@ -349,7 +349,7 @@ bool IthoCC1101::checkForNewPacket()
 	switch (receiveState)
 	{
 		case ExpectMessage1:
-			length = receiveData(&packet1, 16);
+			length = receiveData(&inMessage1, 16);
 					
 			//check if message1 is received
 			if ((length > 0) && (isValidMessage1()))
@@ -373,7 +373,7 @@ bool IthoCC1101::checkForNewPacket()
 			break;
 		
 		case ExpectMessage2:
-			length = receiveData(&packet2, 44);
+			length = receiveData(&inMessage2, 44);
 						
 			//check if message2 is received
 			if ((length > 0) && (isValidMessage2()))
@@ -405,7 +405,7 @@ bool IthoCC1101::checkForNewPacket()
 
 bool IthoCC1101::isValidMessage1()
 {
-	if (packet1.data[12] != 170)	
+	if (inMessage1.data[12] != 170)	
 	{
 		return false;
 	}
@@ -415,7 +415,7 @@ bool IthoCC1101::isValidMessage1()
 
 bool IthoCC1101::isValidMessage2()
 {
-	if (packet2.data[37] != 170) 
+	if (inMessage2.data[37] != 170) 
 	{
 		return false;
 	}
@@ -451,20 +451,20 @@ void IthoCC1101::parseMessage1()
 	
 	//copy device id from packet
 	// TODO: verify if this really is this the device id
-	ithoPacket.deviceId[0] = packet1.data[2];
-	ithoPacket.deviceId[1] = packet1.data[3];
-	ithoPacket.deviceId[2] = packet1.data[4] & 0b11111110;	//last bit is part of command
+	inIthoPacket.deviceId[0] = inMessage1.data[2];
+	inIthoPacket.deviceId[1] = inMessage1.data[3];
+	inIthoPacket.deviceId[2] = inMessage1.data[4] & 0b11111110;	//last bit is part of command
 	
 	//copy command data from packet
 	//message1 command starts at index 5, last bit!
 	uint8_t commandBytes[7];
-	commandBytes[0] = packet1.data[5] & 0b00000001;
-	commandBytes[1] = packet1.data[6];
-	commandBytes[2] = packet1.data[7];
-	commandBytes[3] = packet1.data[8];
-	commandBytes[4] = packet1.data[9];
-	commandBytes[5] = packet1.data[10];
-	commandBytes[6] = packet1.data[11];
+	commandBytes[0] = inMessage1.data[5] & 0b00000001;
+	commandBytes[1] = inMessage1.data[6];
+	commandBytes[2] = inMessage1.data[7];
+	commandBytes[3] = inMessage1.data[8];
+	commandBytes[4] = inMessage1.data[9];
+	commandBytes[5] = inMessage1.data[10];
+	commandBytes[6] = inMessage1.data[11];
 	
 	//match received commandBytes with known command bytes
 	for (int i=0; i<7; i++)
@@ -480,15 +480,15 @@ void IthoCC1101::parseMessage1()
 	}
 	
 	//determine command
-	ithoPacket.command = unknown;
-	if (isFullCommand) ithoPacket.command = full;
-	if (isMediumCommand) ithoPacket.command = medium;
-	if (isLowCommand) ithoPacket.command = low;
-	if (isTimer1Command) ithoPacket.command = timer1;
-	if (isTimer2Command) ithoPacket.command = timer2;
-	if (isTimer3Command) ithoPacket.command = timer3;
-	if (isJoinCommand) ithoPacket.command = join;
-	if (isLeaveCommand) ithoPacket.command = leave;	
+	inIthoPacket.command = unknown;
+	if (isFullCommand) inIthoPacket.command = full;
+	if (isMediumCommand) inIthoPacket.command = medium;
+	if (isLowCommand) inIthoPacket.command = low;
+	if (isTimer1Command) inIthoPacket.command = timer1;
+	if (isTimer2Command) inIthoPacket.command = timer2;
+	if (isTimer3Command) inIthoPacket.command = timer3;
+	if (isJoinCommand) inIthoPacket.command = join;
+	if (isLeaveCommand) inIthoPacket.command = leave;	
 }
 
 void IthoCC1101::parseMessage2()
@@ -503,28 +503,28 @@ void IthoCC1101::parseMessage2()
 	bool isLeaveCommand = true;
 		
 	//counter1
-	uint8_t row0 = packet2.data[16];
-	uint8_t row1 = packet2.data[17];
-	uint8_t row2 = packet2.data[18] & 0b11110000;	//4 bits are part of command
-	ithoPacket.counter = calculateMessageCounter(row0, row1, row2);
+	uint8_t row0 = inMessage2.data[16];
+	uint8_t row1 = inMessage2.data[17];
+	uint8_t row2 = inMessage2.data[18] & 0b11110000;	//4 bits are part of command
+	inIthoPacket.counter = calculateMessageCounter(row0, row1, row2);
 	
 	//copy command data from packet
 	uint8_t commandBytes[15];
-	commandBytes[0] = packet2.data[18] & 0b00001111;	//4 bits are part of counter1
-	commandBytes[1] = packet2.data[19];
-	commandBytes[2] = packet2.data[20];
-	commandBytes[3] = packet2.data[21];
-	commandBytes[4] = packet2.data[22];		
-	commandBytes[5] = packet2.data[23];		
-	commandBytes[6] = packet2.data[24];		
-	commandBytes[7] = packet2.data[25];		
-	commandBytes[8] = packet2.data[26];		
-	commandBytes[9] = packet2.data[27];		
-	commandBytes[10] = packet2.data[28];		
-	commandBytes[11] = packet2.data[29];
-	commandBytes[12] = packet2.data[30];		
-	commandBytes[13] = packet2.data[31];		
-	commandBytes[14] = packet2.data[32];				
+	commandBytes[0] = inMessage2.data[18] & 0b00001111;	//4 bits are part of counter1
+	commandBytes[1] = inMessage2.data[19];
+	commandBytes[2] = inMessage2.data[20];
+	commandBytes[3] = inMessage2.data[21];
+	commandBytes[4] = inMessage2.data[22];		
+	commandBytes[5] = inMessage2.data[23];		
+	commandBytes[6] = inMessage2.data[24];		
+	commandBytes[7] = inMessage2.data[25];		
+	commandBytes[8] = inMessage2.data[26];		
+	commandBytes[9] = inMessage2.data[27];		
+	commandBytes[10] = inMessage2.data[28];		
+	commandBytes[11] = inMessage2.data[29];
+	commandBytes[12] = inMessage2.data[30];		
+	commandBytes[13] = inMessage2.data[31];		
+	commandBytes[14] = inMessage2.data[32];				
 						
 	//match received commandBytes with known command bytes
 	for (int i=0; i<15; i++)
@@ -540,21 +540,21 @@ void IthoCC1101::parseMessage2()
 	}	
 		
 	//determine command
-	ithoPacket.command = unknown;
-	if (isFullCommand) ithoPacket.command = full;
-	if (isMediumCommand) ithoPacket.command = medium;
-	if (isLowCommand) ithoPacket.command = low;
-	if (isTimer1Command) ithoPacket.command = timer1;
-	if (isTimer2Command) ithoPacket.command = timer2;
-	if (isTimer3Command) ithoPacket.command = timer3;
-	if (isJoinCommand) ithoPacket.command = join;
-	if (isLeaveCommand) ithoPacket.command = leave;	
+	inIthoPacket.command = unknown;
+	if (isFullCommand) inIthoPacket.command = full;
+	if (isMediumCommand) inIthoPacket.command = medium;
+	if (isLowCommand) inIthoPacket.command = low;
+	if (isTimer1Command) inIthoPacket.command = timer1;
+	if (isTimer2Command) inIthoPacket.command = timer2;
+	if (isTimer3Command) inIthoPacket.command = timer3;
+	if (isJoinCommand) inIthoPacket.command = join;
+	if (isLeaveCommand) inIthoPacket.command = leave;	
 	
 	
 	//insert code for db
 	debug.serOut("NULL\t");
 	
-	switch (ithoPacket.command)
+	switch (inIthoPacket.command)
 	{
 		case join:
 			debug.serOut("join\t");
@@ -582,152 +582,175 @@ void IthoCC1101::parseMessage2()
 			break;			
 	}
 	
-	debug.serOutInt(packet2.data[16]);
+	debug.serOutInt(inMessage2.data[16]);
 	debug.serOut("\t");
-	debug.serOutInt(packet2.data[17]);
+	debug.serOutInt(inMessage2.data[17]);
 	debug.serOut("\t");
-	debug.serOutInt(packet2.data[18]);
+	debug.serOutInt(inMessage2.data[18]);
 	debug.serOut("\t");		
 	
-	debug.serOutInt(packet2.data[33]);
+	debug.serOutInt(inMessage2.data[33]);
 	debug.serOut("\t");
-	debug.serOutInt(packet2.data[34]);
+	debug.serOutInt(inMessage2.data[34]);
 	debug.serOut("\t");
-	debug.serOutInt(packet2.data[35]);
+	debug.serOutInt(inMessage2.data[35]);
 	debug.serOut("\t");
 	
-	debug.serOutInt(ithoPacket.counter);	
+	debug.serOutInt(inIthoPacket.counter);	
 	debug.serOut("\n");
     	
 	
 	//bug detection
-	if (calculateMessage2Byte24(ithoPacket.counter) != packet2.data[16])
+	if (calculateMessage2Byte24(inIthoPacket.counter) != inMessage2.data[16])
 		debug.serOut("error byte24\n");
-	if (calculateMessage2Byte25(ithoPacket.counter) != packet2.data[17])
+	if (calculateMessage2Byte25(inIthoPacket.counter) != inMessage2.data[17])
 		debug.serOut("error byte25\n");
-	if (calculateMessage2Byte26(ithoPacket.counter) != (packet2.data[18] & 0b11110000))
+	if (calculateMessage2Byte26(inIthoPacket.counter) != (inMessage2.data[18] & 0b11110000))
 		debug.serOut("error byte26\n");
-	if (calculateMessage2Byte41(ithoPacket.counter, ithoPacket.command) != packet2.data[33])
+	if (calculateMessage2Byte41(inIthoPacket.counter, inIthoPacket.command) != inMessage2.data[33])
 		debug.serOut("error byte41\n");
-	if (calculateMessage2Byte42(ithoPacket.counter, ithoPacket.command) != packet2.data[34])
+	if (calculateMessage2Byte42(inIthoPacket.counter, inIthoPacket.command) != inMessage2.data[34])
 		debug.serOut("error byte42\n");
-	if (calculateMessage2Byte43(ithoPacket.counter, ithoPacket.command) != packet2.data[35])
+	if (calculateMessage2Byte43(inIthoPacket.counter, inIthoPacket.command) != inMessage2.data[35])
 		debug.serOut("error byte43\n");
 }
 
-void IthoCC1101::createMessage1(IthoPacket *packet)
+void IthoCC1101::sendCommand(IthoCommand command)
 {
-	/************************************************************************/
-	/* this function is not tested!                                                                     */
-	/************************************************************************/
-
+	CC1101Packet outMessage1;
+	CC1101Packet outMessage2;
 	
-	uint8_t bytes[20];
+	//update itho packet data
+	outIthoPacket.command = command;
+	outIthoPacket.counter += 1;
 	
-	//fixed
-	bytes[0] = 170;
-	bytes[1] = 170;
-	bytes[2] = 170;
-	bytes[3] = 173;
+	//get message1 bytes
+	createMessage1(&outIthoPacket, &outMessage1);
 	
-	//device id ??
-	bytes[4] = 51;
-	bytes[5] = 83;	
-	bytes[6] = packet->deviceId[0];
-	bytes[7] = packet->deviceId[1];
-	bytes[8] = packet->deviceId[2];
-	bytes[9] = 204;
-
-	//command
-	uint8_t *commandBytes = getMessage1CommandBytes(packet->command);
-	bytes[9] = bytes[9] | commandBytes[0];	//only last bit is set
-	bytes[10] = commandBytes[1];
-	bytes[11] = commandBytes[2];
-	bytes[12] = commandBytes[3];
-	bytes[13] = commandBytes[4];
-	bytes[14] = commandBytes[5];
-	bytes[15] = commandBytes[6];
+	//get message2 bytes
+	createMessage2(&outIthoPacket, &outMessage2);
 	
-	//fixed
-	bytes[16] = 170;
-	bytes[17] = 171;
+	//send messages (3 times)
+	//..
 	
-	//previous command (not important)
-	bytes[18] = 85;
-	bytes[19] = 77;
+	//- 3 should be a setting
+	//- counter should be a get/set, needs to be written to nvram later
+	//- deviceid should be a setting as well? random gen function?
+	
 }
 
-void IthoCC1101::createMessage2(IthoPacket *packet)
+void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
+{
+	/************************************************************************/
+	/* this function is not tested!                                                                     */
+	/************************************************************************/
+
+	packet->length = 20;
+
+	//fixed
+	packet->data[0] = 170;
+	packet->data[1] = 170;
+	packet->data[2] = 170;
+	packet->data[3] = 173;
+	
+	//device id ??
+	packet->data[4] = 51;
+	packet->data[5] = 83;	
+	packet->data[6] = itho->deviceId[0];
+	packet->data[7] = itho->deviceId[1];
+	packet->data[8] = itho->deviceId[2];
+	packet->data[9] = 204;
+
+	//command
+	uint8_t *commandBytes = getMessage1CommandBytes(itho->command);
+	packet->data[9] = packet->data[9] | commandBytes[0];	//only last bit is set
+	packet->data[10] = commandBytes[1];
+	packet->data[11] = commandBytes[2];
+	packet->data[12] = commandBytes[3];
+	packet->data[13] = commandBytes[4];
+	packet->data[14] = commandBytes[5];
+	packet->data[15] = commandBytes[6];
+	
+	//fixed
+	packet->data[16] = 170;
+	packet->data[17] = 171;
+	
+	//previous command (not important)
+	packet->data[18] = 85;
+	packet->data[19] = 77;
+}
+
+void IthoCC1101::createMessage2(IthoPacket *itho, CC1101Packet *packet)
 {
 	/************************************************************************/
 	/* this function is not tested!                                                                     */
 	/************************************************************************/
 	
-	uint8_t bytes[50];
+	packet->length = 50;
 	
 	//fixed
-	bytes[0] = 170;
-	bytes[1] = 170;
-	bytes[2] = 170;
-	bytes[3] = 170;
-	bytes[4] = 170;
-	bytes[5] = 170;
-	bytes[6] = 170;				
-	bytes[7] = 171;	
-	bytes[8] = 254;				
-	bytes[9] = 0;				
-	bytes[10] = 179;				
-	bytes[11] = 42;				
-	bytes[12] = 171;				
-	bytes[13] = 42;				
-	bytes[14] = 149;				
-	bytes[15] = 154;				
+	packet->data[0] = 170;
+	packet->data[1] = 170;
+	packet->data[2] = 170;
+	packet->data[3] = 170;
+	packet->data[4] = 170;
+	packet->data[5] = 170;
+	packet->data[6] = 170;				
+	packet->data[7] = 171;	
+	packet->data[8] = 254;				
+	packet->data[9] = 0;				
+	packet->data[10] = 179;				
+	packet->data[11] = 42;				
+	packet->data[12] = 171;				
+	packet->data[13] = 42;				
+	packet->data[14] = 149;				
+	packet->data[15] = 154;				
 	
 	//device id???
-	bytes[16] = 0;
-	bytes[17] = 0;
-	bytes[18] = 0;
-	bytes[19] = 0;
-	bytes[20] = 0;				
-	bytes[21] = 0;
-	bytes[22] = 0;
-	bytes[23] = 0;
+	packet->data[16] = 0;
+	packet->data[17] = 0;
+	packet->data[18] = 0;
+	packet->data[19] = 0;
+	packet->data[20] = 0;				
+	packet->data[21] = 0;
+	packet->data[22] = 0;
+	packet->data[23] = 0;
 	
 	//counter bytes
-	bytes[24] = calculateMessage2Byte24(packet->counter);
-	bytes[25] = calculateMessage2Byte25(packet->counter);
-	bytes[26] = calculateMessage2Byte26(packet->counter);
+	packet->data[24] = calculateMessage2Byte24(itho->counter);
+	packet->data[25] = calculateMessage2Byte25(itho->counter);
+	packet->data[26] = calculateMessage2Byte26(itho->counter);
 
 	//command
-	uint8_t *commandBytes = getMessage2CommandBytes(packet->command);
-	bytes[26] = bytes[26] | commandBytes[0];
-	bytes[27] = commandBytes[1];
-	bytes[28] = commandBytes[2];
-	bytes[29] = commandBytes[3];
-	bytes[30] = commandBytes[4];
-	bytes[31] = commandBytes[5];
-	bytes[32] = commandBytes[6];
-	bytes[33] = commandBytes[7];
-	bytes[34] = commandBytes[8];
-	bytes[35] = commandBytes[9];
-	bytes[36] = commandBytes[10];
-	bytes[37] = commandBytes[11];
-	bytes[38] = commandBytes[12];
-	bytes[39] = commandBytes[13];	
-	bytes[40] = commandBytes[14];
+	uint8_t *commandBytes = getMessage2CommandBytes(itho->command);
+	packet->data[26] = packet->data[26] | commandBytes[0];
+	packet->data[27] = commandBytes[1];
+	packet->data[28] = commandBytes[2];
+	packet->data[29] = commandBytes[3];
+	packet->data[30] = commandBytes[4];
+	packet->data[31] = commandBytes[5];
+	packet->data[32] = commandBytes[6];
+	packet->data[33] = commandBytes[7];
+	packet->data[34] = commandBytes[8];
+	packet->data[35] = commandBytes[9];
+	packet->data[36] = commandBytes[10];
+	packet->data[37] = commandBytes[11];
+	packet->data[38] = commandBytes[12];
+	packet->data[39] = commandBytes[13];	
+	packet->data[40] = commandBytes[14];
 
 	//counter bytes
-	bytes[41] = calculateMessage2Byte41(packet->counter, packet->command);
-	bytes[42] = calculateMessage2Byte42(packet->counter, packet->command);
-	bytes[43] = calculateMessage2Byte43(packet->counter, packet->command);
+	packet->data[41] = calculateMessage2Byte41(itho->counter, itho->command);
+	packet->data[42] = calculateMessage2Byte42(itho->counter, itho->command);
+	packet->data[43] = calculateMessage2Byte43(itho->counter, itho->command);
 	
 	//fixed
-	bytes[44] = 172;
-	bytes[45] = 170;
-	bytes[46] = 170;
-	bytes[47] = 170;
-	bytes[48] = 170;
-	bytes[49] = 170;
+	packet->data[44] = 172;
+	packet->data[45] = 170;
+	packet->data[46] = 170;
+	packet->data[47] = 170;
+	packet->data[48] = 170;
+	packet->data[49] = 170;
 }
 
 //calculate 0-255 number out of 3 counter bytes
@@ -858,21 +881,21 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 	switch (command)
 	{
 		case full:
-			return (uint8_t*)&ithoMessage1FullCommandBytes[0];
+		return (uint8_t*)&ithoMessage1FullCommandBytes[0];
 		case medium:
-			return (uint8_t*)&ithoMessage1MediumCommandBytes[0];
+		return (uint8_t*)&ithoMessage1MediumCommandBytes[0];
 		case low:
-			return (uint8_t*)&ithoMessage1LowCommandBytes[0];
+		return (uint8_t*)&ithoMessage1LowCommandBytes[0];
 		case timer1:
-			return (uint8_t*)&ithoMessage1Timer1CommandBytes[0];
+		return (uint8_t*)&ithoMessage1Timer1CommandBytes[0];
 		case timer2:
-			return (uint8_t*)&ithoMessage1Timer2CommandBytes[0];
+		return (uint8_t*)&ithoMessage1Timer2CommandBytes[0];
 		case timer3:
-			return (uint8_t*)&ithoMessage1Timer3CommandBytes[0];
+		return (uint8_t*)&ithoMessage1Timer3CommandBytes[0];
 		case join:
-			return (uint8_t*)&ithoMessage1JoinCommandBytes[0];
+		return (uint8_t*)&ithoMessage1JoinCommandBytes[0];
 		case leave:
-			return (uint8_t*)&ithoMessage1LeaveCommandBytes[0];
+		return (uint8_t*)&ithoMessage1LeaveCommandBytes[0];
 	}
 }
 
@@ -881,21 +904,21 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 	switch (command)
 	{
 		case full:
-			return (uint8_t*)&ithoMessage2FullCommandBytes[0];
+		return (uint8_t*)&ithoMessage2FullCommandBytes[0];
 		case medium:
-			return (uint8_t*)&ithoMessage2MediumCommandBytes[0];
+		return (uint8_t*)&ithoMessage2MediumCommandBytes[0];
 		case low:
-			return (uint8_t*)&ithoMessage2LowCommandBytes[0];
+		return (uint8_t*)&ithoMessage2LowCommandBytes[0];
 		case timer1:
-			return (uint8_t*)&ithoMessage2Timer1CommandBytes[0];
+		return (uint8_t*)&ithoMessage2Timer1CommandBytes[0];
 		case timer2:
-			return (uint8_t*)&ithoMessage2Timer2CommandBytes[0];
+		return (uint8_t*)&ithoMessage2Timer2CommandBytes[0];
 		case timer3:
-			return (uint8_t*)&ithoMessage2Timer3CommandBytes[0];
+		return (uint8_t*)&ithoMessage2Timer3CommandBytes[0];
 		case join:
-			return (uint8_t*)&ithoMessage2JoinCommandBytes[0];
+		return (uint8_t*)&ithoMessage2JoinCommandBytes[0];
 		case leave:
-			return (uint8_t*)&ithoMessage2LeaveCommandBytes[0];
+		return (uint8_t*)&ithoMessage2LeaveCommandBytes[0];
 	}
 }
 
@@ -903,8 +926,8 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 uint8_t IthoCC1101::getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value)
 {
 	for (uint8_t i=0; i<length; i++)
-		if (arr[i] == value)
-			return i;
+	if (arr[i] == value)
+	return i;
 	
 	//-1 should never be returned!
 	return -1;

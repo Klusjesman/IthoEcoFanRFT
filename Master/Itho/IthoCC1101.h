@@ -58,49 +58,65 @@ class IthoCC1101 : public CC1101
 {
 	private:
 		//receive
-		IthoReceiveStates receiveState;
-		millis_t lastMessage1Received;
-		bool isMessage2Required;
-		CC1101PACKET packet1;
-		CC1101PACKET packet2;		
-		IthoPacket ithoPacket;
+		IthoReceiveStates receiveState;		//state machine receive
+		millis_t lastMessage1Received;		//used for timeout detection
+		CC1101Packet inMessage1;			//temp storage message1
+		CC1101Packet inMessage2;			//temp storage message2
+		IthoPacket inIthoPacket;			//stores last received message data
+		
+		//send
+		IthoPacket outIthoPacket;			//stores state of "remote"
+
+		//settings
+		bool isMessage2Required;			//enable/disable retrieval of message2
 		
 	//functions
 	public:
 		IthoCC1101(SPI *spi);
 		~IthoCC1101();
 		
-		void initSendMessage1();
-		void initSendMessage2();
-		void finishTransfer();
-		
+		//init
 		void initReceive();
 		void setMessage2Requirement(bool message2Required);
 		
+		//receive
 		bool checkForNewPacket();
-		IthoPacket getLastPacket() { return ithoPacket; }		
+		IthoPacket getLastPacket() { return inIthoPacket; }		
+				
+		//send
+		void sendCommand(IthoCommand command);
 				
 	protected:
 	private:
 		IthoCC1101();
 		IthoCC1101( const IthoCC1101 &c );
 		IthoCC1101& operator=( const IthoCC1101 &c );
+
+		//init CC1101 for receiving
+		void initReceiveMessage1();
+		void initReceiveMessage2();
 		
+		//init CC1101 for sending
+		void initSendMessage1();
+		void initSendMessage2();
+		void finishTransfer();		
+		
+		//receive message validation
 		bool isValidMessage1();
 		bool isValidMessage2();	
 			
-		void initReceiveMessage1();
-		void initReceiveMessage2();	
-		
+		//parse received message
 		void parseReceivedPackets();
 		void parseMessage1();
 		void parseMessage2();
 		
-		void createMessage1(IthoPacket *packet);
-		void createMessage2(IthoPacket *packet);
+		//send
+		void createMessage1(IthoPacket *itho, CC1101Packet *packet);
+		void createMessage2(IthoPacket *itho, CC1101Packet *packet);
 		uint8_t* getMessage1CommandBytes(IthoCommand command);
 		uint8_t* getMessage2CommandBytes(IthoCommand command);
 		
+		//counter bytes calculation (send)
 		uint8_t calculateMessage2Byte24(uint8_t counter);
 		uint8_t calculateMessage2Byte25(uint8_t counter);
 		uint8_t calculateMessage2Byte26(uint8_t counter);
@@ -108,8 +124,11 @@ class IthoCC1101 : public CC1101
 		uint8_t calculateMessage2Byte42(uint8_t counter, IthoCommand command);
 		uint8_t calculateMessage2Byte43(uint8_t counter, IthoCommand command);
 		
-		uint8_t getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value);
+		//counter calculation (receive)
 		uint8_t calculateMessageCounter(uint8_t byte24, uint8_t byte25, uint8_t byte26);
+		
+		//general
+		uint8_t getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value);		
 
 }; //IthoCC1101
 
