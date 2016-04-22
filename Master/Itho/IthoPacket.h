@@ -6,24 +6,21 @@
 #define ITHOPACKET_H_
 
 
+//do not change enum because they are used in calculations!
 typedef enum IthoCommand
 {
-
-	timer3 = 0,		//??
+	unknown = 0,
+		
+	join = 4,
+	leave = 8,
+				
+	low = 35,	
+	medium = 36,	
+	full = 37,
 	
-	timer2 = 3,		//??
-	timer1 = 7,		//??	
-	
-	
-			
-	full = 11,
-	medium = 12,	
-	low = 13,
-	
-	join = 22,		//??
-	leave = 23,		//??
-
-	unknown = 32	
+	timer3 = 41,
+	timer2 = 51,
+	timer1 = 61,
 };
 
 
