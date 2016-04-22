@@ -762,49 +762,34 @@ uint8_t IthoCC1101::calculateMessage2Byte26(uint8_t counter)
 
 uint8_t IthoCC1101::calculateMessage2Byte41(uint8_t counter, IthoCommand command)
 {
-	//TODO: this function needs to be simplified, maybe IthoCommand enum can be used for this!
 	int var = 0;
 	uint8_t hi = 0;
 	
 	switch (command)
 	{
 		case timer1:
-			hi = 160;
-			var = 7;
-			if (counter < var) counter = 64 - counter;
-			break;
-		case timer2:
-			hi = 96;
-			var = -3;
-			if (counter < var) counter = 64 - counter;
-			break;		
 		case timer3:
 			hi = 160;
-			var = -13;
+			var = 48 - command;
 			if (counter < var) counter = 64 - counter;
-			//counter value 0 nog testen- TODO
-			break;		
+			break;
+			
 		case join:
 			hi = 96;
 			counter = 0;
-			break;		
+			break;
+				
 		case leave:
 			hi = 160;
 			counter = 0;
-			break;		
+			break;
+							
 		case low:
-			hi = 96;
-			var = 13;
-			if (counter < var) counter = 74 - counter;
-			break;		
 		case medium:
-			hi = 96;
-			var = 12;
-			if (counter < var) counter = 74 - counter;
-			break;		
 		case full:
+		case timer2:
 			hi = 96;
-			var = 11;
+			var = 48 - command;
 			if (counter < var) counter = 74 - counter;
 			break;		
 	}
@@ -834,7 +819,6 @@ uint8_t IthoCC1101::calculateMessage2Byte42(uint8_t counter, IthoCommand command
 
 uint8_t IthoCC1101::calculateMessage2Byte43(uint8_t counter, IthoCommand command)
 {
-	//TODO: this function needs to be simplified, maybe IthoCommand enum can be used for this!	
 	switch (command)
 	{
 		case medium:
