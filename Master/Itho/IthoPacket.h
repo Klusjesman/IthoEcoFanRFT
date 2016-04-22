@@ -18,9 +18,9 @@ typedef enum IthoCommand
 	medium = 36,	
 	full = 37,
 	
-	timer3 = 41,
+	timer1 = 41,
 	timer2 = 51,
-	timer1 = 61
+	timer3 = 61
 };
 
 
