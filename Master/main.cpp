@@ -8,8 +8,7 @@
 /*
 TODO
 - CC1101 RX fifo last byte bug (see errata)
-- parse message1 (previous command, counters, verify device id)
-- parse message2
+- parse message1/message2 (verify device id)
 - send (message1, message2)
 */
 
@@ -57,10 +56,10 @@ int main(void)
 		if (rf.checkForNewPacket())
 		{
 			packet = rf.getLastPacket();
-
-			//show counter1
-			debug.serOut("counter1=");
-			debug.serOutInt(packet.counter1);
+			/*
+			//show counter
+			debug.serOut("counter=");
+			debug.serOutInt(packet.counter);
 			debug.serOut(", ");
 			
 			//show command
@@ -94,7 +93,7 @@ int main(void)
 					debug.serOut("leave\n");
 					break;
 			}
-			
+			*/
 		}
 
 	}

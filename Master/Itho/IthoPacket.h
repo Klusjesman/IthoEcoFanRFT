@@ -8,15 +8,22 @@
 
 typedef enum IthoCommand
 {
-	unknown = 0,
-	low,
-	medium,
-	full,
-	timer1,
-	timer2,
-	timer3,
-	join,
-	leave
+
+	timer3 = 0,		//??
+	
+	timer2 = 3,		//??
+	timer1 = 7,		//??	
+	
+	
+			
+	full = 11,
+	medium = 12,	
+	low = 13,
+	
+	join = 22,		//??
+	leave = 23,		//??
+
+	unknown = 32	
 };
 
 
@@ -26,8 +33,7 @@ class IthoPacket
 		uint8_t deviceId[3];	//not sure of this is correct
 		IthoCommand command;
 		
-		uint8_t counter1; //0-255
-		
+		uint8_t counter; //0-255	
 };
 
 

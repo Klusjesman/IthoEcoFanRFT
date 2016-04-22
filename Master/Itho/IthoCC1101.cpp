@@ -410,13 +410,6 @@ bool IthoCC1101::isValidMessage1()
 		return false;
 	}
 	
-/*
-		debug.serOutInt(packet1.data[14]);
-		debug.serOut("\n");
-
-		debug.serOutInt(packet1.data[15]);
-		debug.serOut("\n");
-			*/
 	return true;
 }
 
@@ -513,17 +506,7 @@ void IthoCC1101::parseMessage2()
 	uint8_t row0 = packet2.data[16];
 	uint8_t row1 = packet2.data[17];
 	uint8_t row2 = packet2.data[18] & 0b11110000;	//4 bits are part of command
-	ithoPacket.counter1 = counter1ToByte(row0, row1, row2);
-	
-	uint8_t a,b,c;
-	counter1ToBytes(ithoPacket.counter1,&a,&b,&c);
-	
-	if ((a != row0) || (b != row1) || (c != row2))
-	{
-		debug.serOutInt(row0); debug.serOut("-"); debug.serOutInt(a); debug.serOut("\n");
-		debug.serOutInt(row1); debug.serOut("-"); debug.serOutInt(b); debug.serOut("\n");
-		debug.serOutInt(row2); debug.serOut("-"); debug.serOutInt(c); debug.serOut("\n");
-	}
+	ithoPacket.counter = calculateMessageCounter(row0, row1, row2);
 	
 	//copy command data from packet
 	uint8_t commandBytes[15];
@@ -566,6 +549,70 @@ void IthoCC1101::parseMessage2()
 	if (isTimer3Command) ithoPacket.command = timer3;
 	if (isJoinCommand) ithoPacket.command = join;
 	if (isLeaveCommand) ithoPacket.command = leave;	
+	
+	
+	//insert code for db
+	debug.serOut("NULL\t");
+	
+	switch (ithoPacket.command)
+	{
+		case join:
+			debug.serOut("join\t");
+			break;
+		case leave:
+			debug.serOut("leave\t");
+			break;			
+		case low:
+			debug.serOut("low\t");
+			break;			
+		case medium:
+			debug.serOut("medium\t");
+			break;			
+		case timer1:
+			debug.serOut("timer1\t");
+			break;			
+		case timer2:
+			debug.serOut("timer2\t");
+			break;			
+		case timer3:
+			debug.serOut("timer3\t");
+			break;			
+		case full:
+			debug.serOut("full\t");
+			break;			
+	}
+	
+	debug.serOutInt(packet2.data[16]);
+	debug.serOut("\t");
+	debug.serOutInt(packet2.data[17]);
+	debug.serOut("\t");
+	debug.serOutInt(packet2.data[18]);
+	debug.serOut("\t");		
+	
+	debug.serOutInt(packet2.data[33]);
+	debug.serOut("\t");
+	debug.serOutInt(packet2.data[34]);
+	debug.serOut("\t");
+	debug.serOutInt(packet2.data[35]);
+	debug.serOut("\t");
+	
+	debug.serOutInt(ithoPacket.counter);	
+	debug.serOut("\n");
+    	
+	
+	//bug detection
+	if (calculateMessage2Byte24(ithoPacket.counter) != packet2.data[16])
+		debug.serOut("error byte24\n");
+	if (calculateMessage2Byte25(ithoPacket.counter) != packet2.data[17])
+		debug.serOut("error byte25\n");
+	if (calculateMessage2Byte26(ithoPacket.counter) != (packet2.data[18] & 0b11110000))
+		debug.serOut("error byte26\n");
+	if (calculateMessage2Byte41(ithoPacket.counter, ithoPacket.command) != packet2.data[33])
+		debug.serOut("error byte41\n");
+	if (calculateMessage2Byte42(ithoPacket.counter, ithoPacket.command) != packet2.data[34])
+		debug.serOut("error byte42\n");
+	if (calculateMessage2Byte43(ithoPacket.counter, ithoPacket.command) != packet2.data[35])
+		debug.serOut("error byte43\n");
 }
 
 void IthoCC1101::createMessage1(IthoPacket *packet)
@@ -646,8 +693,10 @@ void IthoCC1101::createMessage2(IthoPacket *packet)
 	bytes[22] = 0;
 	bytes[23] = 0;
 	
-	//counter1
-	counter1ToBytes(packet->counter1, &bytes[24], &bytes[25], &bytes[26]);
+	//counter bytes
+	bytes[24] = calculateMessage2Byte24(packet->counter);
+	bytes[25] = calculateMessage2Byte25(packet->counter);
+	bytes[26] = calculateMessage2Byte26(packet->counter);
 
 	//command
 	uint8_t *commandBytes = getMessage2CommandBytes(packet->command);
@@ -667,11 +716,11 @@ void IthoCC1101::createMessage2(IthoPacket *packet)
 	bytes[39] = commandBytes[13];	
 	bytes[40] = commandBytes[14];
 
-	//counter2
-	bytes[41] = 0;
-	bytes[42] = 0;
-	bytes[43] = 0;
-
+	//counter bytes
+	bytes[41] = calculateMessage2Byte41(packet->counter, packet->command);
+	bytes[42] = calculateMessage2Byte42(packet->counter, packet->command);
+	bytes[43] = calculateMessage2Byte43(packet->counter, packet->command);
+	
 	//fixed
 	bytes[44] = 172;
 	bytes[45] = 170;
@@ -679,6 +728,169 @@ void IthoCC1101::createMessage2(IthoPacket *packet)
 	bytes[47] = 170;
 	bytes[48] = 170;
 	bytes[49] = 170;
+}
+
+//calculate 0-255 number out of 3 counter bytes
+uint8_t IthoCC1101::calculateMessageCounter(uint8_t byte24, uint8_t byte25, uint8_t byte26)
+{
+	uint8_t result;
+	
+	uint8_t a = getCounterIndex(&counterBytes24a[0],2,byte24 & 0b00000011);	//last 2 bits only
+	uint8_t b = getCounterIndex(&counterBytes24b[0],8,byte24 & 0b11111100);	//first 6 bits
+	uint8_t c = getCounterIndex(&counterBytes25[0],8,byte25);
+	uint8_t d = getCounterIndex(&counterBytes26[0],2,byte26);
+	
+	result = (a * 128) + (b * 16) + (d * 8) + c;
+	
+	return result;
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte24(uint8_t counter)
+{
+	return counterBytes24a[(counter / 128)] | counterBytes24b[(counter % 128) / 16];	
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte25(uint8_t counter)
+{
+	return counterBytes25[(counter % 16) % 8];
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte26(uint8_t counter)
+{
+	return counterBytes26[(counter % 16) / 8];
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte41(uint8_t counter, IthoCommand command)
+{
+	//TODO: this function needs to be simplified, maybe IthoCommand enum can be used for this!
+	int var = 0;
+	uint8_t hi = 0;
+	
+	switch (command)
+	{
+		case timer1:
+			hi = 160;
+			var = 7;
+			if (counter < var) counter = 64 - counter;
+			break;
+		case timer2:
+			hi = 96;
+			var = -3;
+			if (counter < var) counter = 64 - counter;
+			break;		
+		case timer3:
+			hi = 160;
+			var = -13;
+			if (counter < var) counter = 64 - counter;
+			//counter value 0 nog testen- TODO
+			break;		
+		case join:
+			hi = 96;
+			counter = 0;
+			break;		
+		case leave:
+			hi = 160;
+			counter = 0;
+			break;		
+		case low:
+			hi = 96;
+			var = 13;
+			if (counter < var) counter = 74 - counter;
+			break;		
+		case medium:
+			hi = 96;
+			var = 12;
+			if (counter < var) counter = 74 - counter;
+			break;		
+		case full:
+			hi = 96;
+			var = 11;
+			if (counter < var) counter = 74 - counter;
+			break;		
+	}
+
+	return (hi | counterBytes41[((counter - var) % 64) / 16]);
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte42(uint8_t counter, IthoCommand command)
+{
+	//TODO: this function needs to be simplified, maybe IthoCommand enum can be used for this!
+	uint8_t result;
+	
+	switch (command)
+	{
+		case low:
+			counter -= 29;
+			break;
+					
+		case medium:
+			counter -= 28;
+			break;
+					
+		case full:
+			counter -= 27;
+			break;
+					
+		case timer1:
+			counter -= 23;
+			break;
+					
+		case timer2:
+			counter -= 13;
+			break;
+					
+		case timer3:
+			counter -= 3;
+			break;
+					
+		case join:
+		case leave:
+			counter = 193;
+			break;
+	}
+
+	result = counterBytes42[counter / 64];
+
+	if (counter % 2 == 1) result -= 1;
+	
+	return result;
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte43(uint8_t counter, IthoCommand command)
+{
+	//TODO: this function needs to be simplified, maybe IthoCommand enum can be used for this!	
+	switch (command)
+	{
+		case medium:
+			break;
+				
+		case low:
+		case timer2:
+			if (counter % 2 == 0) counter -= 1;
+			break;
+			
+		case full:
+			counter += 2;
+			if (counter % 2 == 0) counter -= 1;
+			break;
+			
+		case timer1:
+			counter += 6;
+			if (counter % 2 == 0) counter -= 1;		
+			break;
+			
+		case timer3:
+			counter += 10;
+			if (counter % 2 == 0) counter -= 1;		
+			break;
+			
+		case join:
+		case leave:
+			counter = 0;
+			break;	
+	}
+
+	return counterBytes43[(counter % 16) / 2];
 }
 
 uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
@@ -701,7 +913,7 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 			return (uint8_t*)&ithoMessage1JoinCommandBytes[0];
 		case leave:
 			return (uint8_t*)&ithoMessage1LeaveCommandBytes[0];
-	}	
+	}
 }
 
 uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
@@ -711,9 +923,9 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 		case full:
 			return (uint8_t*)&ithoMessage2FullCommandBytes[0];
 		case medium:
-			return (uint8_t*)&ithoMessage2FullCommandBytes[0];
-		case low:
 			return (uint8_t*)&ithoMessage2MediumCommandBytes[0];
+		case low:
+			return (uint8_t*)&ithoMessage2LowCommandBytes[0];
 		case timer1:
 			return (uint8_t*)&ithoMessage2Timer1CommandBytes[0];
 		case timer2:
@@ -725,30 +937,6 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 		case leave:
 			return (uint8_t*)&ithoMessage2LeaveCommandBytes[0];
 	}
-}
-
-//calculate 0-255 number out of 3 counter1 bytes
-uint8_t IthoCC1101::counter1ToByte(uint8_t row0, uint8_t row1, uint8_t row2)
-{
-	//return byte with value 0-255
-	uint8_t result;
-	
-	uint8_t indexRow0a = getCounterIndex(&counter1Bytes0a[0],2,row0 & 0b00000011);	//last 2 bits only
-	uint8_t indexRow0b = getCounterIndex(&counter1Bytes0b[0],8,row0 & 0b11111100);	//first 6 bits
-	uint8_t indexRow1 = getCounterIndex(&counter1Bytes1[0],8,row1);
-	uint8_t indexRow2 = getCounterIndex(&counter1Bytes2[0],2,row2);
-	
-	result = (indexRow0a * 128) + (indexRow0b * 16) + (indexRow2 * 8) + indexRow1;
-	
-	return result;
-}
-
-//calculate 3 counter1 bytes out of 0-255 number
-void IthoCC1101::counter1ToBytes(uint8_t counter1, uint8_t *row0, uint8_t *row1, uint8_t *row2)
-{
-	*row0 = counter1Bytes0a[(counter1 / 128)] | counter1Bytes0b[(counter1 % 128) / 16];
-	*row2 = counter1Bytes2[(counter1 % 16) / 8];
-	*row1 = counter1Bytes1[(counter1 % 16) % 8];
 }
 
 //lookup value in array
