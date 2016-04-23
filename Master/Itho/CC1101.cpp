@@ -17,10 +17,9 @@ CC1101::~CC1101()
 {
 } //~CC1101
 
-
 void CC1101::spi_waitMiso()
 {
-	while (bit_read(SPI_PORT_MISO, SPI_PIN_MISO));
+	while ((SPI_PORT_MISO >> SPI_PIN_MISO) & 0x01);
 }
 
 void CC1101::init()
