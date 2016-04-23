@@ -58,30 +58,35 @@ class IthoCC1101 : public CC1101
 {
 	private:
 		//receive
-		IthoReceiveStates receiveState;		//state machine receive
-		millis_t lastMessage1Received;		//used for timeout detection
-		CC1101Packet inMessage1;			//temp storage message1
-		CC1101Packet inMessage2;			//temp storage message2
-		IthoPacket inIthoPacket;			//stores last received message data
+		IthoReceiveStates receiveState;											//state machine receive
+		millis_t lastMessage1Received;											//used for timeout detection
+		CC1101Packet inMessage1;												//temp storage message1
+		CC1101Packet inMessage2;												//temp storage message2
+		IthoPacket inIthoPacket;												//stores last received message data
 		
 		//send
-		IthoPacket outIthoPacket;			//stores state of "remote"
+		IthoPacket outIthoPacket;												//stores state of "remote"
 
 		//settings
-		bool isMessage2Required;			//enable/disable retrieval of message2
+		bool isMessage2Required;												//enable/disable retrieval of message2
+		uint8_t sendTries;														//number of times a command is send at one button press
 		
 	//functions
 	public:
-		IthoCC1101(SPI *spi);
+		IthoCC1101(SPI *spi, uint8_t counter = 0, uint8_t sendTries = 3);		//set initial counter value
 		~IthoCC1101();
 		
 		//init
 		void initReceive();
 		void setMessage2Requirement(bool message2Required);
+		uint8_t getLastCounter() { return outIthoPacket.counter; }				//counter is increased before sending a command
+		void setSendTries(uint8_t sendTries) { this->sendTries = sendTries; }
+		
+		//- deviceid should be a setting as well? random gen function? TODO
 		
 		//receive
-		bool checkForNewPacket();
-		IthoPacket getLastPacket() { return inIthoPacket; }		
+		bool checkForNewPacket();												//check RX fifo for new data
+		IthoPacket getLastPacket() { return inIthoPacket; }						//retrieve last received/parsed packet from remote
 				
 		//send
 		void sendCommand(IthoCommand command);

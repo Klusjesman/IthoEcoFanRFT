@@ -30,7 +30,7 @@ class IthoPacket
 		uint8_t deviceId[3];	//not sure of this is correct
 		IthoCommand command;
 		
-		uint8_t counter; //0-255	
+		uint8_t counter;		//0-255, counter is increased on every remote button press
 };
 
 

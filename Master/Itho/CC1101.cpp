@@ -197,6 +197,8 @@ uint8_t CC1101::receiveData(CC1101Packet* packet, uint8_t length)
 
 bool CC1101::sendData(CC1101Packet packet)
 {
+	//TODO, not implemented
+	// try tx fifo first
 }
 
 void CC1101::printRegisters()

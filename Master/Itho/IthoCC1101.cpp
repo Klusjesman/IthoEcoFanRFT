@@ -8,10 +8,12 @@
 #include "../suart/SerialDebug.h"
 
 // default constructor
-IthoCC1101::IthoCC1101(SPI *spi) : CC1101(spi)
+IthoCC1101::IthoCC1101(SPI *spi, uint8_t counter, uint8_t sendTries) : CC1101(spi)
 {
-	receiveState = ExpectMessage1;
-	isMessage2Required = true;
+	this->outIthoPacket.counter = counter;
+	this->sendTries = sendTries;
+	this->receiveState = ExpectMessage1;
+	this->isMessage2Required = true;
 } //IthoCC1101
 
 // default destructor
@@ -284,16 +286,16 @@ void IthoCC1101::initReceiveMessage1()
 	writeRegister(CC1101_MDMCFG4 ,0x08);
 	writeRegister(CC1101_MDMCFG3 ,0x43);
 	writeRegister(CC1101_DEVIATN ,0x40);
-	
+		
 	//set fifo mode with fixed packet length and sync bytes
-	writeRegister(CC1101_PKTLEN , 16);
+	writeRegister(CC1101_PKTLEN , 16);		//16 bytes message (sync at beginning of message is removed by CC1101)
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
-	writeRegister(CC1101_SYNC1 ,170);
-	writeRegister(CC1101_SYNC0 ,173);
+	writeRegister(CC1101_SYNC1 ,170);		//message1 byte2
+	writeRegister(CC1101_SYNC0 ,173);		//message1 byte3
 	writeRegister(CC1101_MDMCFG2 ,0x02);
 	writeRegister(CC1101_PKTCTRL1 ,0x00);	
 	
-	writeCommand(CC1101_SRX); //switch to RX state
+	writeCommand(CC1101_SRX);				//switch to RX state
 
 	// Check that the RX state has been entered
 	while (((marcState = readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) & CC1101_BITS_MARCSTATE) != CC1101_MARCSTATE_RX)
@@ -317,10 +319,10 @@ void IthoCC1101::initReceiveMessage2()
 	writeRegister(CC1101_DEVIATN ,0x50);
 	
 	//set fifo mode with fixed packet length and sync bytes
-	writeRegister(CC1101_PKTLEN ,44);
+	writeRegister(CC1101_PKTLEN ,44);			//44 bytes message (sync at beginning of message is removed by CC1101)
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
-	writeRegister(CC1101_SYNC1 ,170);
-	writeRegister(CC1101_SYNC0 ,171);
+	writeRegister(CC1101_SYNC1 ,170);			//message2 byte6
+	writeRegister(CC1101_SYNC0 ,171);			//message2 byte7
 	writeRegister(CC1101_MDMCFG2 ,0x02);
 	writeRegister(CC1101_PKTCTRL1 ,0x00);		
 	
@@ -630,13 +632,22 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	//get message2 bytes
 	createMessage2(&outIthoPacket, &outMessage2);
 	
-	//send messages (3 times)
-	//..
-	
-	//- 3 should be a setting
-	//- counter should be a get/set, needs to be written to nvram later
-	//- deviceid should be a setting as well? random gen function?
-	
+	//send messages
+	for (int i=0;i<sendTries;i++)
+	{
+		//message1
+		initSendMessage1();
+		sendData(outMessage1);
+		
+		delay_ms(4);
+		
+		//message2
+		initSendMessage2();
+		sendData(outMessage2);
+		
+		finishTransfer();
+		delay_ms(40);
+	}
 }
 
 void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
@@ -650,7 +661,7 @@ void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
 	//fixed
 	packet->data[0] = 170;
 	packet->data[1] = 170;
-	packet->data[2] = 170;
+	packet->data[2] = 170;	
 	packet->data[3] = 173;
 	
 	//device id ??
