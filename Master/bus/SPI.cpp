@@ -65,7 +65,7 @@ uint8_t SPI::write(uint8_t value)
 
 uint8_t SPI::read()
 {
-    SPDR = 0xff;
+    SPDR = 0xFF;
     while (!(SPSR & (1 << SPIF)));
     SPSR &= ~(1 << SPIF);
 

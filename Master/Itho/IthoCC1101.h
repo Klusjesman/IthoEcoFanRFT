@@ -122,6 +122,7 @@ class IthoCC1101 : public CC1101
 		uint8_t* getMessage2CommandBytes(IthoCommand command);
 		
 		//counter bytes calculation (send)
+		uint8_t getMessage1Byte18(IthoCommand command);
 		uint8_t calculateMessage2Byte24(uint8_t counter);
 		uint8_t calculateMessage2Byte25(uint8_t counter);
 		uint8_t calculateMessage2Byte26(uint8_t counter);

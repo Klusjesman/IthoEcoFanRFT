@@ -11,6 +11,7 @@
 IthoCC1101::IthoCC1101(SPI *spi, uint8_t counter, uint8_t sendTries) : CC1101(spi)
 {
 	this->outIthoPacket.counter = counter;
+	this->outIthoPacket.previous = low;
 	this->sendTries = sendTries;
 	this->receiveState = ExpectMessage1;
 	this->isMessage2Required = true;
@@ -324,7 +325,7 @@ void IthoCC1101::initReceiveMessage2()
 	writeRegister(CC1101_SYNC1 ,170);			//message2 byte6
 	writeRegister(CC1101_SYNC0 ,171);			//message2 byte7
 	writeRegister(CC1101_MDMCFG2 ,0x02);
-	writeRegister(CC1101_PKTCTRL1 ,0x00);		
+	writeRegister(CC1101_PKTCTRL1 ,0x00);	
 	
 	writeCommand(CC1101_SRX); //switch to RX state
 
@@ -491,6 +492,19 @@ void IthoCC1101::parseMessage1()
 	if (isTimer3Command) inIthoPacket.command = timer3;
 	if (isJoinCommand) inIthoPacket.command = join;
 	if (isLeaveCommand) inIthoPacket.command = leave;	
+	
+	//previous command
+	debug.serOutInt(inMessage1.data[14]);	debug.serOut("\n");
+	debug.serOutInt(inMessage1.data[15]);	debug.serOut("\n");
+	/*
+	byte14:
+	77 = join
+	82 = leave
+	85 = low,full,med,t1,t2,t3
+	
+	byte15:
+	??? the last byte is always corrupted, maybe due to incorrect RX settings. 
+	*/
 }
 
 void IthoCC1101::parseMessage2()
@@ -553,55 +567,6 @@ void IthoCC1101::parseMessage2()
 	if (isLeaveCommand) inIthoPacket.command = leave;	
 	
 	
-	//insert code for db
-	debug.serOut("NULL\t");
-	
-	switch (inIthoPacket.command)
-	{
-		case join:
-			debug.serOut("join\t");
-			break;
-		case leave:
-			debug.serOut("leave\t");
-			break;			
-		case low:
-			debug.serOut("low\t");
-			break;			
-		case medium:
-			debug.serOut("medium\t");
-			break;			
-		case timer1:
-			debug.serOut("timer1\t");
-			break;			
-		case timer2:
-			debug.serOut("timer2\t");
-			break;			
-		case timer3:
-			debug.serOut("timer3\t");
-			break;			
-		case full:
-			debug.serOut("full\t");
-			break;			
-	}
-	
-	debug.serOutInt(inMessage2.data[16]);
-	debug.serOut("\t");
-	debug.serOutInt(inMessage2.data[17]);
-	debug.serOut("\t");
-	debug.serOutInt(inMessage2.data[18]);
-	debug.serOut("\t");		
-	
-	debug.serOutInt(inMessage2.data[33]);
-	debug.serOut("\t");
-	debug.serOutInt(inMessage2.data[34]);
-	debug.serOut("\t");
-	debug.serOutInt(inMessage2.data[35]);
-	debug.serOut("\t");
-	
-	debug.serOutInt(inIthoPacket.counter);	
-	debug.serOut("\n");
-    	
-	
 	//bug detection
 	if (calculateMessage2Byte24(inIthoPacket.counter) != inMessage2.data[16])
 		debug.serOut("error byte24\n");
@@ -623,6 +588,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	CC1101Packet outMessage2;
 	
 	//update itho packet data
+	outIthoPacket.previous = outIthoPacket.command;
 	outIthoPacket.command = command;
 	outIthoPacket.counter += 1;
 	
@@ -686,8 +652,8 @@ void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[16] = 170;
 	packet->data[17] = 171;
 	
-	//previous command (not important)
-	packet->data[18] = 85;
+	//previous command
+	packet->data[18] = getMessage1Byte18(itho->previous);
 	packet->data[19] = 77;
 }
 
@@ -777,6 +743,21 @@ uint8_t IthoCC1101::calculateMessageCounter(uint8_t byte24, uint8_t byte25, uint
 	result = (a * 128) + (b * 16) + (d * 8) + c;
 	
 	return result;
+}
+
+uint8_t IthoCC1101::getMessage1Byte18(IthoCommand command)
+{
+	switch (command)
+	{
+		case join:
+			return 77;
+		
+		case leave:
+			return 82;
+		
+		default:
+			return 85;
+	}
 }
 
 uint8_t IthoCC1101::calculateMessage2Byte24(uint8_t counter)

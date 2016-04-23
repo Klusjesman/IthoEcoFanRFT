@@ -142,7 +142,7 @@ void CC1101::readBurstRegister(uint8_t* buffer, uint8_t address, uint8_t length)
 	spi->write(address | CC1101_READ_BURST);
 	
 	//read all data bytes
-	for (i=0 ; i<length ; i++)
+	for (i=0; i<length; i++)
 		buffer[i] = spi->read();
 		
 	spi->deselect();
@@ -163,23 +163,9 @@ uint8_t CC1101::receiveData(CC1101Packet* packet, uint8_t length)
 	else if (rxBytes == length)
 	{
 		readBurstRegister(packet->data, CC1101_RXFIFO, rxBytes);
-		
-		//TODO: fix RX fifo last byte bug (see errata CC1101)
-		/*
-		for (int i=0;i<length;i++)
-		{
-			do 
-			{
-				rxBytes = readRegisterWithSyncProblem(CC1101_RXBYTES, CC1101_STATUS_REGISTER);
-				rxBytes = rxBytes & CC1101_BITS_RX_BYTES_IN_FIFO;
-				
-			} while (rxBytes + i != length);
-			
-			packet->data[i] = readRegister(CC1101_RXFIFO, CC1101_STATUS_REGISTER);
-		}
-				*/
+
 		//continue RX
-		writeCommand(CC1101_SIDLE);	//idle
+		writeCommand(CC1101_SIDLE);	//idle		
 		writeCommand(CC1101_SFRX); //flush RX buffer
 		writeCommand(CC1101_SRX); //switch to RX state	
 		

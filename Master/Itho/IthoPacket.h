@@ -29,6 +29,7 @@ class IthoPacket
 	public:
 		uint8_t deviceId[3];	//not sure of this is correct
 		IthoCommand command;
+		IthoCommand previous;
 		
 		uint8_t counter;		//0-255, counter is increased on every remote button press
 };
