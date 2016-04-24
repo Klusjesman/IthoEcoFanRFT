@@ -574,6 +574,7 @@ void IthoCC1101::parseMessage2()
 	testCreateMessage();
 }
 
+//check if we can generate the same input message based on the counter and command only (yes we can!)
 void IthoCC1101::testCreateMessage()
 {
 	CC1101Packet outMessage1;
