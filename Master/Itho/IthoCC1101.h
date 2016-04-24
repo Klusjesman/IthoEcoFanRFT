@@ -54,7 +54,7 @@ typedef enum IthoReceiveStates
 
 
 
-class IthoCC1101 : public CC1101
+class IthoCC1101 : protected CC1101
 {
 	private:
 		//receive
@@ -77,6 +77,7 @@ class IthoCC1101 : public CC1101
 		~IthoCC1101();
 		
 		//init
+		void init() { CC1101::init(); }											//init,reset CC1101
 		void initReceive();
 		void setMessage2Requirement(bool message2Required);
 		uint8_t getLastCounter() { return outIthoPacket.counter; }				//counter is increased before sending a command
@@ -123,6 +124,7 @@ class IthoCC1101 : public CC1101
 		
 		//counter bytes calculation (send)
 		uint8_t getMessage1Byte18(IthoCommand command);
+		IthoCommand getMessage1PreviousCommand(uint8_t byte18);
 		uint8_t calculateMessage2Byte24(uint8_t counter);
 		uint8_t calculateMessage2Byte25(uint8_t counter);
 		uint8_t calculateMessage2Byte26(uint8_t counter);
@@ -135,6 +137,9 @@ class IthoCC1101 : public CC1101
 		
 		//general
 		uint8_t getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value);		
+		
+		//test
+		void testCreateMessage();
 
 }; //IthoCC1101
 

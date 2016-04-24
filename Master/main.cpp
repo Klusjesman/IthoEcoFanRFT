@@ -56,7 +56,7 @@ int main(void)
 		if (rf.checkForNewPacket())
 		{
 			packet = rf.getLastPacket();
-			/*
+			
 			//show counter
 			debug.serOut("counter=");
 			debug.serOutInt(packet.counter);
@@ -93,7 +93,7 @@ int main(void)
 					debug.serOut("leave\n");
 					break;
 			}
-			*/
+			
 		}
 
 	}

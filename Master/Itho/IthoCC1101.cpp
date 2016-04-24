@@ -88,10 +88,17 @@ void IthoCC1101::initSendMessage1()
 	writeRegister(CC1101_MDMCFG4 ,0x08);	//00001000
 	writeRegister(CC1101_MDMCFG3 ,0x43);	//01000011
 	writeRegister(CC1101_DEVIATN ,0x40);	//01000000
-	writeRegister(CC1101_IOCFG0 ,0x2D);		//GDO0_Z_EN_N. When this output is 0, GDO0 is configured as input (for serial TX data).
-	writeRegister(CC1101_IOCFG1 ,0x0B);		//Serial Clock. Synchronous to the data in synchronous serial mode.
+	//writeRegister(CC1101_IOCFG0 ,0x2D);		//GDO0_Z_EN_N. When this output is 0, GDO0 is configured as input (for serial TX data).
+	//writeRegister(CC1101_IOCFG1 ,0x0B);		//Serial Clock. Synchronous to the data in synchronous serial mode.
 	
-	writeCommand(CC1101_STX);	
+	//new
+	writeRegister(CC1101_IOCFG0 ,0x2E);
+	writeRegister(CC1101_IOCFG1 ,0x2E);	
+	writeRegister(CC1101_PKTLEN , 19);
+	writeRegister(CC1101_PKTCTRL0 ,0x00);
+	writeRegister(CC1101_PKTCTRL1 ,0x00);	
+		
+	//writeCommand(CC1101_STX);	
 }
 
 void IthoCC1101::initSendMessage2()
@@ -169,10 +176,17 @@ void IthoCC1101::initSendMessage2()
 	writeRegister(CC1101_MDMCFG4 ,0x5A);	//difference compared to message1
 	writeRegister(CC1101_MDMCFG3 ,0x83);	//difference compared to message1
 	writeRegister(CC1101_DEVIATN ,0x50);	//difference compared to message1
-	writeRegister(CC1101_IOCFG0 ,0x2D);		//GDO0_Z_EN_N. When this output is 0, GDO0 is configured as input (for serial TX data).
-	writeRegister(CC1101_IOCFG1 ,0x0B);		//Serial Clock. Synchronous to the data in synchronous serial mode.
+	//writeRegister(CC1101_IOCFG0 ,0x2D);		//GDO0_Z_EN_N. When this output is 0, GDO0 is configured as input (for serial TX data).
+	//writeRegister(CC1101_IOCFG1 ,0x0B);		//Serial Clock. Synchronous to the data in synchronous serial mode.
 
-	writeCommand(CC1101_STX);
+	//new
+	writeRegister(CC1101_IOCFG0 ,0x2E);
+	writeRegister(CC1101_IOCFG1 ,0x2E);
+	writeRegister(CC1101_PKTLEN , 50);
+	writeRegister(CC1101_PKTCTRL0 ,0x00);
+	writeRegister(CC1101_PKTCTRL1 ,0x00);
+
+	//writeCommand(CC1101_STX);
 }
 
 void IthoCC1101::finishTransfer()
@@ -289,7 +303,7 @@ void IthoCC1101::initReceiveMessage1()
 	writeRegister(CC1101_DEVIATN ,0x40);
 		
 	//set fifo mode with fixed packet length and sync bytes
-	writeRegister(CC1101_PKTLEN , 16);		//16 bytes message (sync at beginning of message is removed by CC1101)
+	writeRegister(CC1101_PKTLEN , 15);		//15 bytes message (sync at beginning of message is removed by CC1101)
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
 	writeRegister(CC1101_SYNC1 ,170);		//message1 byte2
 	writeRegister(CC1101_SYNC0 ,173);		//message1 byte3
@@ -320,7 +334,7 @@ void IthoCC1101::initReceiveMessage2()
 	writeRegister(CC1101_DEVIATN ,0x50);
 	
 	//set fifo mode with fixed packet length and sync bytes
-	writeRegister(CC1101_PKTLEN ,44);			//44 bytes message (sync at beginning of message is removed by CC1101)
+	writeRegister(CC1101_PKTLEN ,42);			//42 bytes message (sync at beginning of message is removed by CC1101)
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
 	writeRegister(CC1101_SYNC1 ,170);			//message2 byte6
 	writeRegister(CC1101_SYNC0 ,171);			//message2 byte7
@@ -352,7 +366,7 @@ bool IthoCC1101::checkForNewPacket()
 	switch (receiveState)
 	{
 		case ExpectMessage1:
-			length = receiveData(&inMessage1, 16);
+			length = receiveData(&inMessage1, 15);
 					
 			//check if message1 is received
 			if ((length > 0) && (isValidMessage1()))
@@ -376,7 +390,7 @@ bool IthoCC1101::checkForNewPacket()
 			break;
 		
 		case ExpectMessage2:
-			length = receiveData(&inMessage2, 44);
+			length = receiveData(&inMessage2, 42);
 						
 			//check if message2 is received
 			if ((length > 0) && (isValidMessage2()))
@@ -494,17 +508,7 @@ void IthoCC1101::parseMessage1()
 	if (isLeaveCommand) inIthoPacket.command = leave;	
 	
 	//previous command
-	debug.serOutInt(inMessage1.data[14]);	debug.serOut("\n");
-	debug.serOutInt(inMessage1.data[15]);	debug.serOut("\n");
-	/*
-	byte14:
-	77 = join
-	82 = leave
-	85 = low,full,med,t1,t2,t3
-	
-	byte15:
-	??? the last byte is always corrupted, maybe due to incorrect RX settings. 
-	*/
+	inIthoPacket.previous = getMessage1PreviousCommand(inMessage1.data[14]);
 }
 
 void IthoCC1101::parseMessage2()
@@ -565,21 +569,54 @@ void IthoCC1101::parseMessage2()
 	if (isTimer3Command) inIthoPacket.command = timer3;
 	if (isJoinCommand) inIthoPacket.command = join;
 	if (isLeaveCommand) inIthoPacket.command = leave;	
-	
-	
+		
 	//bug detection
-	if (calculateMessage2Byte24(inIthoPacket.counter) != inMessage2.data[16])
-		debug.serOut("error byte24\n");
-	if (calculateMessage2Byte25(inIthoPacket.counter) != inMessage2.data[17])
-		debug.serOut("error byte25\n");
-	if (calculateMessage2Byte26(inIthoPacket.counter) != (inMessage2.data[18] & 0b11110000))
-		debug.serOut("error byte26\n");
-	if (calculateMessage2Byte41(inIthoPacket.counter, inIthoPacket.command) != inMessage2.data[33])
-		debug.serOut("error byte41\n");
-	if (calculateMessage2Byte42(inIthoPacket.counter, inIthoPacket.command) != inMessage2.data[34])
-		debug.serOut("error byte42\n");
-	if (calculateMessage2Byte43(inIthoPacket.counter, inIthoPacket.command) != inMessage2.data[35])
-		debug.serOut("error byte43\n");
+	testCreateMessage();
+}
+
+void IthoCC1101::testCreateMessage()
+{
+	CC1101Packet outMessage1;
+	CC1101Packet outMessage2;
+	
+	//update itho packet data
+	outIthoPacket.previous = inIthoPacket.previous;
+	outIthoPacket.command = inIthoPacket.command;
+	outIthoPacket.counter =  inIthoPacket.counter;
+	
+	//get message1 bytes
+	createMessage1(&outIthoPacket, &outMessage1);
+	
+	for (int i=0; i<inMessage1.length;i++)
+	{
+		if (inMessage1.data[i] != outMessage1.data[i+4])
+		{
+			debug.serOut("message1 not ok=byte");
+			debug.serOutInt(i+4);
+			debug.serOut(" (");
+			debug.serOutInt(inMessage1.data[i]);
+			debug.serOut("/");
+			debug.serOutInt(outMessage1.data[i+4]);
+			debug.serOut(")\n");
+		}
+	}
+	
+	//get message2 bytes
+	createMessage2(&outIthoPacket, &outMessage2);
+	
+	for (int i=0; i<inMessage2.length;i++)
+	{
+		if (inMessage2.data[i] != outMessage2.data[i+8])
+		{
+			debug.serOut("message2 not ok=byte");
+			debug.serOutInt(i+8);
+			debug.serOut(" (");
+			debug.serOutInt(inMessage2.data[i]);
+			debug.serOut("/");
+			debug.serOutInt(outMessage2.data[i+8]);
+			debug.serOut(")\n");
+		}
+	}		
 }
 
 void IthoCC1101::sendCommand(IthoCommand command)
@@ -603,13 +640,13 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	{
 		//message1
 		initSendMessage1();
-		sendData(outMessage1);
+		sendData(&outMessage1);
 		
 		delay_ms(4);
 		
 		//message2
 		initSendMessage2();
-		sendData(outMessage2);
+		sendData(&outMessage2);
 		
 		finishTransfer();
 		delay_ms(40);
@@ -618,11 +655,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 
 void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
 {
-	/************************************************************************/
-	/* this function is not tested!                                                                     */
-	/************************************************************************/
-
-	packet->length = 20;
+	packet->length = 19;
 
 	//fixed
 	packet->data[0] = 170;
@@ -633,10 +666,10 @@ void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
 	//device id ??
 	packet->data[4] = 51;
 	packet->data[5] = 83;	
-	packet->data[6] = itho->deviceId[0];
-	packet->data[7] = itho->deviceId[1];
-	packet->data[8] = itho->deviceId[2];
-	packet->data[9] = 204;
+	packet->data[6] = 51;
+	packet->data[7] = 43;
+	packet->data[8] = 84;
+	packet->data[9] = 204;	//last bit is part of command
 
 	//command
 	uint8_t *commandBytes = getMessage1CommandBytes(itho->command);
@@ -654,15 +687,11 @@ void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
 	
 	//previous command
 	packet->data[18] = getMessage1Byte18(itho->previous);
-	packet->data[19] = 77;
+	//packet->data[19] = 77;
 }
 
 void IthoCC1101::createMessage2(IthoPacket *itho, CC1101Packet *packet)
 {
-	/************************************************************************/
-	/* this function is not tested!                                                                     */
-	/************************************************************************/
-	
 	packet->length = 50;
 	
 	//fixed
@@ -684,14 +713,14 @@ void IthoCC1101::createMessage2(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[15] = 154;				
 	
 	//device id???
-	packet->data[16] = 0;
-	packet->data[17] = 0;
-	packet->data[18] = 0;
-	packet->data[19] = 0;
-	packet->data[20] = 0;				
-	packet->data[21] = 0;
-	packet->data[22] = 0;
-	packet->data[23] = 0;
+	packet->data[16] = 101;
+	packet->data[17] = 89;
+	packet->data[18] = 154;
+	packet->data[19] = 153;
+	packet->data[20] = 170;				
+	packet->data[21] = 105;
+	packet->data[22] = 154;
+	packet->data[23] = 86;
 	
 	//counter bytes
 	packet->data[24] = calculateMessage2Byte24(itho->counter);
@@ -722,12 +751,24 @@ void IthoCC1101::createMessage2(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[43] = calculateMessage2Byte43(itho->counter, itho->command);
 	
 	//fixed
-	packet->data[44] = 172;
-	packet->data[45] = 170;
-	packet->data[46] = 170;
-	packet->data[47] = 170;
-	packet->data[48] = 170;
-	packet->data[49] = 170;
+	if (itho->command == join || itho->command == leave)
+	{
+		packet->data[44] = 153;
+		packet->data[45] = 170;
+		packet->data[46] = 105;
+		packet->data[47] = 154;
+		packet->data[48] = 86;
+		packet->data[49] = (itho->command == join ? 85 : 154);
+	}
+	else
+	{
+		packet->data[44] = 172;
+		packet->data[45] = 170;
+		packet->data[46] = 170;
+		packet->data[47] = 170;	
+		packet->data[48] = 170;	
+		packet->data[49] = 160;	
+	}
 }
 
 //calculate 0-255 number out of 3 counter bytes
@@ -743,6 +784,21 @@ uint8_t IthoCC1101::calculateMessageCounter(uint8_t byte24, uint8_t byte25, uint
 	result = (a * 128) + (b * 16) + (d * 8) + c;
 	
 	return result;
+}
+
+IthoCommand IthoCC1101::getMessage1PreviousCommand(uint8_t byte18)
+{
+	switch (byte18)
+	{
+		case 77:
+			return join;
+			
+		case 82:
+			return leave;
+			
+		case 85:
+			return low;
+	}
 }
 
 uint8_t IthoCC1101::getMessage1Byte18(IthoCommand command)

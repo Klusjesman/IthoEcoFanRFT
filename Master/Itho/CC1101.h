@@ -112,6 +112,7 @@
 #define CC1101_STATUS_FIFO_BYTES_AVAILABLE_BM   0x0F
 
 /* Masks to retrieve status bit */
+#define CC1101_BITS_TX_FIFO_UNDERFLOW			0x80
 #define CC1101_BITS_RX_BYTES_IN_FIFO			0x7F
 #define CC1101_BITS_MARCSTATE					0x1F
 
@@ -185,7 +186,7 @@ class CC1101
 		void writeBurstRegister(uint8_t address, uint8_t* data, uint8_t length);
 		void readBurstRegister(uint8_t* buffer, uint8_t address, uint8_t length);
 		
-		bool sendData(CC1101Packet packet);
+		bool sendData(CC1101Packet *packet);
 		uint8_t receiveData(CC1101Packet* packet, uint8_t length);
 	
 		void printRegisters();

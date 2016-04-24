@@ -180,10 +180,32 @@ uint8_t CC1101::receiveData(CC1101Packet* packet, uint8_t length)
 	return packet->length;
 }
 
-bool CC1101::sendData(CC1101Packet packet)
+bool CC1101::sendData(CC1101Packet *packet)
 {
-	//TODO, not implemented
-	// try tx fifo first
+	/************************************************************************/
+	/* this function is not tested!                                                                     */
+	/************************************************************************/
+	
+	writeCommand(CC1101_SIDLE);		//idle
+
+	uint8_t txStatus = readRegisterWithSyncProblem(CC1101_TXBYTES, CC1101_STATUS_REGISTER);
+	
+	//clear TX fifo if needed
+	if (txStatus & CC1101_BITS_TX_FIFO_UNDERFLOW)
+	{
+		writeCommand(CC1101_SIDLE);	//idle
+		writeCommand(CC1101_SFTX);	//flush TX buffer
+	}
+
+	writeCommand(CC1101_SIDLE);		//idle
+
+	writeBurstRegister(CC1101_TXBYTES, packet->data, packet->length);
+
+	writeCommand(CC1101_SIDLE);
+	writeCommand(CC1101_STX);		//switch to TX state
+
+ 	//wait until transmission is finished (TXOFF_MODE is expected to be set to 0/IDLE)
+	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & CC1101_BITS_MARCSTATE) != CC1101_MARCSTATE_IDLE);
 }
 
 void CC1101::printRegisters()
