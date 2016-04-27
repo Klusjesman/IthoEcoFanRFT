@@ -43,9 +43,7 @@ const uint8_t counterBytes26[] = {96,160};
 const uint8_t counterBytes41[] = {5, 10, 6, 9};
 const uint8_t counterBytes42[] = {90, 170, 106, 154};
 const uint8_t counterBytes43[] = {154, 90, 166, 102, 150, 86, 170, 106};
-//leave
-
-//join
+//join/leave
 const uint8_t counterBytes64[] = {154,90,166,102,150,86,169,105,153,89,165,101,149,85,170,106};
 const uint8_t counterBytes65[] = {150,169,153,165,149,170,154,166};
 const uint8_t counterBytes66[] = {170,106};
@@ -143,7 +141,9 @@ class IthoCC1101 : protected CC1101
 		uint8_t calculateMessage2Byte41(uint8_t counter, IthoCommand command);
 		uint8_t calculateMessage2Byte42(uint8_t counter, IthoCommand command);
 		uint8_t calculateMessage2Byte43(uint8_t counter, IthoCommand command);
+		uint8_t calculateMessage2Byte49(uint8_t counter);
 		uint8_t calculateMessage2Byte50(uint8_t counter);
+		uint8_t calculateMessage2Byte51(uint8_t counter);
 		uint8_t calculateMessage2Byte64(uint8_t counter);
 		uint8_t calculateMessage2Byte65(uint8_t counter);
 		uint8_t calculateMessage2Byte66(uint8_t counter);

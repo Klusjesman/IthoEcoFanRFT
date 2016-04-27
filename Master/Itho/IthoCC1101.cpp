@@ -904,15 +904,15 @@ void IthoCC1101::createMessageJoin(IthoPacket *itho, CC1101Packet *packet)
 		
 	packet->length = 72;
 	
-	//fixed
-	packet->data[44] = 153;
-	packet->data[45] = 170;
-	packet->data[46] = 105;
-	packet->data[47] = 154;
-	packet->data[48] = 86;
+	//part of device id??
+	packet->data[44] = itho->deviceId[3];
+	packet->data[45] = itho->deviceId[4];
+	packet->data[46] = itho->deviceId[5];
+	packet->data[47] = itho->deviceId[6];
+	packet->data[48] = itho->deviceId[7];
 	
-	//command
-	packet->data[49] = (itho->command == join ? 85 : 154);
+	//command join
+	packet->data[49] = 85;
 	
 	//fixed
 	packet->data[50] = 165;
@@ -952,17 +952,6 @@ void IthoCC1101::createMessageLeave(IthoPacket *itho, CC1101Packet *packet)
 	
 	packet->length = 57;
 	
-/*
-	this->outIthoPacket.deviceId[0] = 101;
-	this->outIthoPacket.deviceId[1] = 89;
-	this->outIthoPacket.deviceId[2] = 154;
-	this->outIthoPacket.deviceId[3] = 153;
-	this->outIthoPacket.deviceId[4] = 170;
-	this->outIthoPacket.deviceId[5] = 105;
-	this->outIthoPacket.deviceId[6] = 154;
-	this->outIthoPacket.deviceId[7] = 86;
-*/	
-	
 	//part of device id??
 	packet->data[44] = itho->deviceId[3];
 	packet->data[45] = itho->deviceId[4];
@@ -971,10 +960,10 @@ void IthoCC1101::createMessageLeave(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[48] = itho->deviceId[7];
 	
 	//counter bytes
-	packet->data[49] = 170;	//
-	packet->data[50] = calculateMessage2Byte50(itho->counter);
-	packet->data[51] = 106;	//
-	
+	packet->data[49] = calculateMessage2Byte49(itho->counter);
+	packet->data[50] = 0;//calculateMessage2Byte50(itho->counter); TODO: checksum??
+	packet->data[51] = calculateMessage2Byte51(itho->counter);
+		
 	//fixed
 	packet->data[52] = 202;
 	packet->data[53] = 170;
@@ -982,7 +971,6 @@ void IthoCC1101::createMessageLeave(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[55] = 170;
 	packet->data[56] = 170;
 }
-
 
 //calculate 0-255 number out of 3 counter bytes
 uint8_t IthoCC1101::calculateMessageCounter(uint8_t byte24, uint8_t byte25, uint8_t byte26)
@@ -1137,10 +1125,22 @@ uint8_t IthoCC1101::calculateMessage2Byte43(uint8_t counter, IthoCommand command
 	return counterBytes43[(counter % 16) / 2];
 }
 
+uint8_t IthoCC1101::calculateMessage2Byte49(uint8_t counter)
+{
+	counter += 47;
+	return counterBytes64[(counter / 16)];
+}
+
 uint8_t IthoCC1101::calculateMessage2Byte50(uint8_t counter)
 {
 	//return counterBytes50[counter % 8];
 	return 0;
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte51(uint8_t counter)
+{
+	counter -= 1;
+	return counterBytes66[(counter % 16) / 8];
 }
 
 uint8_t IthoCC1101::calculateMessage2Byte64(uint8_t counter)
