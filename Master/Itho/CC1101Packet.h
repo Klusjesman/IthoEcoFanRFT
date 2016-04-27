@@ -15,7 +15,7 @@ class CC1101Packet
 {
 	public:
 		uint8_t length;
-		uint8_t data[CC1101_DATA_LEN];
+		uint8_t data[CC1101_BUFFER_LEN];
 };
 
 

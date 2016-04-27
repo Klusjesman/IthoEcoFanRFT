@@ -43,10 +43,6 @@ int main(void)
 	//set CC1101 registers
 	rf.initReceive();
 	
-	//ignore Itho message2
-	//rf.setMessage2Requirement(false);
-	
-	
 	debug.serOut("start\n");
 	sei();
 

@@ -43,13 +43,21 @@ const uint8_t counterBytes26[] = {96,160};
 const uint8_t counterBytes41[] = {5, 10, 6, 9};
 const uint8_t counterBytes42[] = {90, 170, 106, 154};
 const uint8_t counterBytes43[] = {154, 90, 166, 102, 150, 86, 170, 106};
+//leave
+
+//join
+const uint8_t counterBytes64[] = {154,90,166,102,150,86,169,105,153,89,165,101,149,85,170,106};
+const uint8_t counterBytes65[] = {150,169,153,165,149,170,154,166};
+const uint8_t counterBytes66[] = {170,106};
 
 
 //state machine
 typedef enum IthoReceiveStates
 {
-	ExpectMessage1,
-	ExpectMessage2
+	ExpectMessageStart,
+	ExpectNormalCommand,
+	ExpectJoinCommand,
+	ExpectLeaveCommand
 };
 
 
@@ -68,7 +76,6 @@ class IthoCC1101 : protected CC1101
 		IthoPacket outIthoPacket;												//stores state of "remote"
 
 		//settings
-		bool isMessage2Required;												//enable/disable retrieval of message2
 		uint8_t sendTries;														//number of times a command is send at one button press
 		
 	//functions
@@ -79,7 +86,6 @@ class IthoCC1101 : protected CC1101
 		//init
 		void init() { CC1101::init(); }											//init,reset CC1101
 		void initReceive();
-		void setMessage2Requirement(bool message2Required);
 		uint8_t getLastCounter() { return outIthoPacket.counter; }				//counter is increased before sending a command
 		void setSendTries(uint8_t sendTries) { this->sendTries = sendTries; }
 		
@@ -100,7 +106,7 @@ class IthoCC1101 : protected CC1101
 
 		//init CC1101 for receiving
 		void initReceiveMessage1();
-		void initReceiveMessage2();
+		void initReceiveMessage2(IthoCommand expectedCommand);
 		
 		//init CC1101 for sending
 		void initSendMessage1();
@@ -108,17 +114,23 @@ class IthoCC1101 : protected CC1101
 		void finishTransfer();		
 		
 		//receive message validation
-		bool isValidMessage1();
-		bool isValidMessage2();	
+		bool isValidMessageStart();
+		bool isValidMessageCommand();	
+		bool isValidMessageJoin();
+		bool isValidMessageLeave();
 			
 		//parse received message
 		void parseReceivedPackets();
-		void parseMessage1();
-		void parseMessage2();
+		void parseMessageStart();
+		void parseMessageCommand();
+		void parseMessageJoin();
+		void parseMessageLeave();
 		
 		//send
-		void createMessage1(IthoPacket *itho, CC1101Packet *packet);
-		void createMessage2(IthoPacket *itho, CC1101Packet *packet);
+		void createMessageStart(IthoPacket *itho, CC1101Packet *packet);
+		void createMessageCommand(IthoPacket *itho, CC1101Packet *packet);
+		void createMessageJoin(IthoPacket *itho, CC1101Packet *packet);
+		void createMessageLeave(IthoPacket *itho, CC1101Packet *packet);
 		uint8_t* getMessage1CommandBytes(IthoCommand command);
 		uint8_t* getMessage2CommandBytes(IthoCommand command);
 		
@@ -131,6 +143,10 @@ class IthoCC1101 : protected CC1101
 		uint8_t calculateMessage2Byte41(uint8_t counter, IthoCommand command);
 		uint8_t calculateMessage2Byte42(uint8_t counter, IthoCommand command);
 		uint8_t calculateMessage2Byte43(uint8_t counter, IthoCommand command);
+		uint8_t calculateMessage2Byte50(uint8_t counter);
+		uint8_t calculateMessage2Byte64(uint8_t counter);
+		uint8_t calculateMessage2Byte65(uint8_t counter);
+		uint8_t calculateMessage2Byte66(uint8_t counter);
 		
 		//counter calculation (receive)
 		uint8_t calculateMessageCounter(uint8_t byte24, uint8_t byte25, uint8_t byte26);

@@ -13,8 +13,17 @@ IthoCC1101::IthoCC1101(SPI *spi, uint8_t counter, uint8_t sendTries) : CC1101(sp
 	this->outIthoPacket.counter = counter;
 	this->outIthoPacket.previous = low;
 	this->sendTries = sendTries;
-	this->receiveState = ExpectMessage1;
-	this->isMessage2Required = true;
+	this->receiveState = ExpectMessageStart;
+	
+	//todo
+	this->outIthoPacket.deviceId[0] = 101;
+	this->outIthoPacket.deviceId[1] = 89;
+	this->outIthoPacket.deviceId[2] = 154;
+	this->outIthoPacket.deviceId[3] = 153;
+	this->outIthoPacket.deviceId[4] = 170;
+	this->outIthoPacket.deviceId[5] = 105;
+	this->outIthoPacket.deviceId[6] = 154;
+	this->outIthoPacket.deviceId[7] = 86;
 } //IthoCC1101
 
 // default destructor
@@ -319,10 +328,10 @@ void IthoCC1101::initReceiveMessage1()
 			writeCommand(CC1101_SFRX); //flush RX buffer
 	}
 	
-	receiveState = ExpectMessage1;
+	receiveState = ExpectMessageStart;
 }
 
-void IthoCC1101::initReceiveMessage2()
+void IthoCC1101::initReceiveMessage2(IthoCommand expectedCommand)
 {
 	uint8_t marcState;
 	
@@ -333,8 +342,26 @@ void IthoCC1101::initReceiveMessage2()
 	writeRegister(CC1101_MDMCFG3 ,0x83);
 	writeRegister(CC1101_DEVIATN ,0x50);
 	
+	//set packet length based on expected message
+	switch (expectedCommand)
+	{
+		case join:
+			writeRegister(CC1101_PKTLEN ,64);
+			receiveState = ExpectJoinCommand;
+			break;
+			
+		case leave:
+			writeRegister(CC1101_PKTLEN ,57);
+			receiveState = ExpectLeaveCommand;
+			break;					
+			
+		default:
+			writeRegister(CC1101_PKTLEN ,42);			//42 bytes message (sync at beginning of message is removed by CC1101)
+			receiveState = ExpectNormalCommand;
+			break;
+	}
+	
 	//set fifo mode with fixed packet length and sync bytes
-	writeRegister(CC1101_PKTLEN ,42);			//42 bytes message (sync at beginning of message is removed by CC1101)
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
 	writeRegister(CC1101_SYNC1 ,170);			//message2 byte6
 	writeRegister(CC1101_SYNC0 ,171);			//message2 byte7
@@ -349,13 +376,6 @@ void IthoCC1101::initReceiveMessage2()
 		if (marcState == CC1101_MARCSTATE_RXFIFO_OVERFLOW) // RX_OVERFLOW
 			writeCommand(CC1101_SFRX); //flush RX buffer
 	}
-	
-	receiveState = ExpectMessage2;
-}
-
-void IthoCC1101::setMessage2Requirement(bool message2Required)
-{
-	isMessage2Required = message2Required;
 }
 
 bool IthoCC1101::checkForNewPacket()
@@ -365,42 +385,33 @@ bool IthoCC1101::checkForNewPacket()
 	
 	switch (receiveState)
 	{
-		case ExpectMessage1:
+		case ExpectMessageStart:
 			length = receiveData(&inMessage1, 15);
-					
+	
 			//check if message1 is received
-			if ((length > 0) && (isValidMessage1()))
+			if ((length > 0) && (isValidMessageStart()))
 			{
-				if (isMessage2Required)
-				{
-					//switch to message2 RF settings
-					initReceiveMessage2();
-				}
-				else
-				{
-					//ignore message2
-					//extract data from message1 only
-					parseReceivedPackets();
-					result = true;
-				}
+				parseMessageStart();
+					
+				//switch to message2 RF settings
+				initReceiveMessage2(inIthoPacket.command);
 				
 				lastMessage1Received = millis();
 			}
 						
 			break;
 		
-		case ExpectMessage2:
+		case ExpectNormalCommand:
 			length = receiveData(&inMessage2, 42);
 						
 			//check if message2 is received
-			if ((length > 0) && (isValidMessage2()))
+			if ((length > 0) && (isValidMessageCommand()))
 			{
+				parseMessageCommand();
+								
 				//switch back to message1 RF settings
 				initReceiveMessage1();
-				
-				//extract data from message1 and message2
-				parseReceivedPackets();
-				
+							
 				//both messages are received
 				result = true;
 			}	
@@ -413,14 +424,75 @@ bool IthoCC1101::checkForNewPacket()
 					initReceiveMessage1();
 				}
 			}
-					
+				
 			break;
+			
+		case ExpectJoinCommand:
+			length = receiveData(&inMessage2, 64);
+		
+			//check if message2 is received
+			if ((length > 0) && (isValidMessageCommand()) && isValidMessageJoin())
+			{
+				parseMessageCommand();
+				parseMessageJoin();
+				
+				//bug detection
+				testCreateMessage();
+				
+				//switch back to message1 RF settings
+				initReceiveMessage1();
+				
+				//both messages are received
+				result = true;
+			}
+			else
+			{
+				//check if waiting timeout is reached (message2 is expected within 22ms after message1)
+				if (millis() - lastMessage1Received > 24)
+				{
+					//switch back to message1 RF settings
+					initReceiveMessage1();
+				}
+			}
+		
+			break;	
+			
+		case ExpectLeaveCommand:
+			length = receiveData(&inMessage2, 45);
+			
+			//check if message2 is received
+			if ((length > 0) && (isValidMessageCommand()) && isValidMessageLeave())
+			{
+				parseMessageCommand();
+				parseMessageLeave();
+				
+				//bug detection
+				testCreateMessage();
+				
+				//switch back to message1 RF settings
+				initReceiveMessage1();
+				
+				//both messages are received
+				result = true;
+			}
+			else
+			{
+				//check if waiting timeout is reached (message2 is expected within 22ms after message1)
+				if (millis() - lastMessage1Received > 24)
+				{
+					//switch back to message1 RF settings
+					initReceiveMessage1();
+				}
+			}
+			
+			break;
+								
 	}
 	
 	return result;
 }
 
-bool IthoCC1101::isValidMessage1()
+bool IthoCC1101::isValidMessageStart()
 {
 	if (inMessage1.data[12] != 170)	
 	{
@@ -430,7 +502,7 @@ bool IthoCC1101::isValidMessage1()
 	return true;
 }
 
-bool IthoCC1101::isValidMessage2()
+bool IthoCC1101::isValidMessageCommand()
 {
 	if (inMessage2.data[37] != 170) 
 	{
@@ -440,22 +512,29 @@ bool IthoCC1101::isValidMessage2()
 	return true;
 }
 
-void IthoCC1101::parseReceivedPackets()
+bool IthoCC1101::isValidMessageJoin()
 {
-	parseMessage1();
-
-/*
-is the rft using both messages, maybe only one is required, probably the second one
-- maybe the first message is used for compatibility with older/different systems only?
-*/
-
-	if (isMessage2Required)
+	/*
+	if (inMessage2.data[37] != 170)
 	{
-		parseMessage2();
+		return false;
 	}
+	*/
+	return true;
 }
 
-void IthoCC1101::parseMessage1()
+bool IthoCC1101::isValidMessageLeave()
+{
+	/*
+	if (inMessage2.data[37] != 170)
+	{
+		return false;
+	}
+	*/
+	return true;
+}
+
+void IthoCC1101::parseMessageStart()
 {
 	bool isFullCommand = true;
 	bool isMediumCommand = true;
@@ -511,7 +590,7 @@ void IthoCC1101::parseMessage1()
 	inIthoPacket.previous = getMessage1PreviousCommand(inMessage1.data[14]);
 }
 
-void IthoCC1101::parseMessage2()
+void IthoCC1101::parseMessageCommand()
 {
 	bool isFullCommand = true;
 	bool isMediumCommand = true;
@@ -521,6 +600,16 @@ void IthoCC1101::parseMessage2()
 	bool isTimer3Command = true;
 	bool isJoinCommand = true;
 	bool isLeaveCommand = true;
+		
+	//device id
+	inIthoPacket.deviceId[0] = inMessage2.data[8];
+	inIthoPacket.deviceId[1] = inMessage2.data[9];
+	inIthoPacket.deviceId[2] = inMessage2.data[10];
+	inIthoPacket.deviceId[3] = inMessage2.data[11];
+	inIthoPacket.deviceId[4] = inMessage2.data[12];
+	inIthoPacket.deviceId[5] = inMessage2.data[13];
+	inIthoPacket.deviceId[6] = inMessage2.data[14];
+	inIthoPacket.deviceId[7] = inMessage2.data[15];
 		
 	//counter1
 	uint8_t row0 = inMessage2.data[16];
@@ -569,9 +658,30 @@ void IthoCC1101::parseMessage2()
 	if (isTimer3Command) inIthoPacket.command = timer3;
 	if (isJoinCommand) inIthoPacket.command = join;
 	if (isLeaveCommand) inIthoPacket.command = leave;	
+}
+
+void IthoCC1101::parseMessageJoin()
+{
+	/*
+	for (int i=0;i<inMessage2.length;i++)
+	{
+		debug.serOutInt(inMessage2.data[i]);
+		debug.serOut("\n");
 		
-	//bug detection
-	testCreateMessage();
+	}	
+	*/
+}
+
+void IthoCC1101::parseMessageLeave()
+{
+	/*
+	for (int i=0;i<inMessage2.length;i++)
+	{
+		debug.serOutInt(inMessage2.data[i]);
+		debug.serOut("\n");
+		
+	}	
+	*/
 }
 
 //check if we can generate the same input message based on the counter and command only (yes we can!)
@@ -586,7 +696,7 @@ void IthoCC1101::testCreateMessage()
 	outIthoPacket.counter =  inIthoPacket.counter;
 	
 	//get message1 bytes
-	createMessage1(&outIthoPacket, &outMessage1);
+	createMessageStart(&outIthoPacket, &outMessage1);
 	
 	for (int i=0; i<inMessage1.length;i++)
 	{
@@ -603,7 +713,20 @@ void IthoCC1101::testCreateMessage()
 	}
 	
 	//get message2 bytes
-	createMessage2(&outIthoPacket, &outMessage2);
+	switch (outIthoPacket.command)
+	{
+		case join:
+			createMessageJoin(&outIthoPacket, &outMessage2);						
+			break;
+			
+		case leave:
+			createMessageLeave(&outIthoPacket, &outMessage2);						
+			break;
+			
+		default:
+			createMessageCommand(&outIthoPacket, &outMessage2);				
+			break;
+	}
 	
 	for (int i=0; i<inMessage2.length;i++)
 	{
@@ -617,7 +740,7 @@ void IthoCC1101::testCreateMessage()
 			debug.serOutInt(outMessage2.data[i+8]);
 			debug.serOut(")\n");
 		}
-	}		
+	}
 }
 
 void IthoCC1101::sendCommand(IthoCommand command)
@@ -631,10 +754,24 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	outIthoPacket.counter += 1;
 	
 	//get message1 bytes
-	createMessage1(&outIthoPacket, &outMessage1);
+	createMessageStart(&outIthoPacket, &outMessage1);
 	
 	//get message2 bytes
-	createMessage2(&outIthoPacket, &outMessage2);
+	switch (command)
+	{
+		case join:
+			createMessageJoin(&outIthoPacket, &outMessage2);
+			break;
+		
+		case leave:
+			createMessageLeave(&outIthoPacket, &outMessage2);
+			break;
+		
+		default:
+			createMessageCommand(&outIthoPacket, &outMessage2);
+			break;
+	}
+	
 	
 	//send messages
 	for (int i=0;i<sendTries;i++)
@@ -654,7 +791,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	}
 }
 
-void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
+void IthoCC1101::createMessageStart(IthoPacket *itho, CC1101Packet *packet)
 {
 	packet->length = 19;
 
@@ -664,7 +801,7 @@ void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[2] = 170;	
 	packet->data[3] = 173;
 	
-	//device id ??
+	//??
 	packet->data[4] = 51;
 	packet->data[5] = 83;	
 	packet->data[6] = 51;
@@ -688,10 +825,10 @@ void IthoCC1101::createMessage1(IthoPacket *itho, CC1101Packet *packet)
 	
 	//previous command
 	packet->data[18] = getMessage1Byte18(itho->previous);
-	//packet->data[19] = 77;
+	//packet->data[19] = 77;, 75
 }
 
-void IthoCC1101::createMessage2(IthoPacket *itho, CC1101Packet *packet)
+void IthoCC1101::createMessageCommand(IthoPacket *itho, CC1101Packet *packet)
 {
 	packet->length = 50;
 	
@@ -713,15 +850,15 @@ void IthoCC1101::createMessage2(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[14] = 149;				
 	packet->data[15] = 154;				
 	
-	//device id???
-	packet->data[16] = 101;
-	packet->data[17] = 89;
-	packet->data[18] = 154;
-	packet->data[19] = 153;
-	packet->data[20] = 170;				
-	packet->data[21] = 105;
-	packet->data[22] = 154;
-	packet->data[23] = 86;
+	//device id
+	packet->data[16] = itho->deviceId[0];
+	packet->data[17] = itho->deviceId[1];
+	packet->data[18] = itho->deviceId[2];
+	packet->data[19] = itho->deviceId[3];
+	packet->data[20] = itho->deviceId[4];
+	packet->data[21] = itho->deviceId[5];
+	packet->data[22] = itho->deviceId[6];
+	packet->data[23] = itho->deviceId[7];
 	
 	//counter bytes
 	packet->data[24] = calculateMessage2Byte24(itho->counter);
@@ -752,25 +889,100 @@ void IthoCC1101::createMessage2(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[43] = calculateMessage2Byte43(itho->counter, itho->command);
 	
 	//fixed
-	if (itho->command == join || itho->command == leave)
-	{
-		packet->data[44] = 153;
-		packet->data[45] = 170;
-		packet->data[46] = 105;
-		packet->data[47] = 154;
-		packet->data[48] = 86;
-		packet->data[49] = (itho->command == join ? 85 : 154);
-	}
-	else
-	{
-		packet->data[44] = 172;
-		packet->data[45] = 170;
-		packet->data[46] = 170;
-		packet->data[47] = 170;	
-		packet->data[48] = 170;	
-		packet->data[49] = 160;	
-	}
+	packet->data[44] = 172;
+	packet->data[45] = 170;
+	packet->data[46] = 170;
+	packet->data[47] = 170;	
+	packet->data[48] = 170;	
+	packet->data[49] = 160;	
 }
+
+void IthoCC1101::createMessageJoin(IthoPacket *itho, CC1101Packet *packet)
+{
+	//message3 is an extension on message2
+	createMessageCommand(itho, packet);
+		
+	packet->length = 72;
+	
+	//fixed
+	packet->data[44] = 153;
+	packet->data[45] = 170;
+	packet->data[46] = 105;
+	packet->data[47] = 154;
+	packet->data[48] = 86;
+	
+	//command
+	packet->data[49] = (itho->command == join ? 85 : 154);
+	
+	//fixed
+	packet->data[50] = 165;
+	packet->data[51] = 105;
+	packet->data[52] = 89;
+	packet->data[53] = 86;
+	packet->data[54] = 106;
+	packet->data[55] = 149;
+	
+	//device id
+	packet->data[56] = itho->deviceId[0];
+	packet->data[57] = itho->deviceId[1];
+	packet->data[58] = itho->deviceId[2];
+	packet->data[59] = itho->deviceId[3];
+	packet->data[60] = itho->deviceId[4];
+	packet->data[61] = itho->deviceId[5];
+	packet->data[62] = itho->deviceId[6];
+	packet->data[63] = itho->deviceId[7];
+	
+	//counter bytes
+	packet->data[64] = calculateMessage2Byte64(itho->counter);
+	packet->data[65] = calculateMessage2Byte65(itho->counter);
+	packet->data[66] = calculateMessage2Byte66(itho->counter);
+	
+	//fixed
+	packet->data[67] = 202;
+	packet->data[68] = 170;
+	packet->data[69] = 170;
+	packet->data[70] = 170;
+	packet->data[71] = 170;
+}
+
+void IthoCC1101::createMessageLeave(IthoPacket *itho, CC1101Packet *packet)
+{
+	//message3 is an extension on message2
+	createMessageCommand(itho, packet);
+	
+	packet->length = 57;
+	
+/*
+	this->outIthoPacket.deviceId[0] = 101;
+	this->outIthoPacket.deviceId[1] = 89;
+	this->outIthoPacket.deviceId[2] = 154;
+	this->outIthoPacket.deviceId[3] = 153;
+	this->outIthoPacket.deviceId[4] = 170;
+	this->outIthoPacket.deviceId[5] = 105;
+	this->outIthoPacket.deviceId[6] = 154;
+	this->outIthoPacket.deviceId[7] = 86;
+*/	
+	
+	//part of device id??
+	packet->data[44] = itho->deviceId[3];
+	packet->data[45] = itho->deviceId[4];
+	packet->data[46] = itho->deviceId[5];
+	packet->data[47] = itho->deviceId[6];
+	packet->data[48] = itho->deviceId[7];
+	
+	//counter bytes
+	packet->data[49] = 170;	//
+	packet->data[50] = calculateMessage2Byte50(itho->counter);
+	packet->data[51] = 106;	//
+	
+	//fixed
+	packet->data[52] = 202;
+	packet->data[53] = 170;
+	packet->data[54] = 170;
+	packet->data[55] = 170;
+	packet->data[56] = 170;
+}
+
 
 //calculate 0-255 number out of 3 counter bytes
 uint8_t IthoCC1101::calculateMessageCounter(uint8_t byte24, uint8_t byte25, uint8_t byte26)
@@ -923,6 +1135,29 @@ uint8_t IthoCC1101::calculateMessage2Byte43(uint8_t counter, IthoCommand command
 	}
 
 	return counterBytes43[(counter % 16) / 2];
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte50(uint8_t counter)
+{
+	//return counterBytes50[counter % 8];
+	return 0;
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte64(uint8_t counter)
+{
+	counter += 3;	
+	return counterBytes64[counter / 16];
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte65(uint8_t counter)
+{
+	return counterBytes65[counter % 8];
+}
+
+uint8_t IthoCC1101::calculateMessage2Byte66(uint8_t counter)
+{
+	counter -= 13;
+	return counterBytes66[(counter % 16) / 8];
 }
 
 uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)

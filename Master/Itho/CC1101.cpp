@@ -148,6 +148,7 @@ void CC1101::readBurstRegister(uint8_t* buffer, uint8_t address, uint8_t length)
 	spi->deselect();
 }
 
+//wait for fixed length in rx fifo
 uint8_t CC1101::receiveData(CC1101Packet* packet, uint8_t length)
 {
 	uint8_t rxBytes = readRegisterWithSyncProblem(CC1101_RXBYTES, CC1101_STATUS_REGISTER);

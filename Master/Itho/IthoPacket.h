@@ -27,7 +27,7 @@ typedef enum IthoCommand
 class IthoPacket
 {
 	public:
-		uint8_t deviceId[3];	//not sure of this is correct
+		uint8_t deviceId[8];
 		IthoCommand command;
 		IthoCommand previous;
 		
