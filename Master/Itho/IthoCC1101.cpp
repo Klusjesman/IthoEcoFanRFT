@@ -961,7 +961,7 @@ void IthoCC1101::createMessageLeave(IthoPacket *itho, CC1101Packet *packet)
 	
 	//counter bytes
 	packet->data[49] = calculateMessage2Byte49(itho->counter);
-	packet->data[50] = 0;//calculateMessage2Byte50(itho->counter); TODO: checksum??
+	packet->data[50] = calculateMessage2Byte50(itho->counter);
 	packet->data[51] = calculateMessage2Byte51(itho->counter);
 		
 	//fixed
@@ -1133,8 +1133,8 @@ uint8_t IthoCC1101::calculateMessage2Byte49(uint8_t counter)
 
 uint8_t IthoCC1101::calculateMessage2Byte50(uint8_t counter)
 {
-	//return counterBytes50[counter % 8];
-	return 0;
+	counter -= 4;
+	return counterBytes65[counter % 8];
 }
 
 uint8_t IthoCC1101::calculateMessage2Byte51(uint8_t counter)
