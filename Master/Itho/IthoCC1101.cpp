@@ -15,7 +15,7 @@ IthoCC1101::IthoCC1101(SPI *spi, uint8_t counter, uint8_t sendTries) : CC1101(sp
 	this->sendTries = sendTries;
 	this->receiveState = ExpectMessageStart;
 	
-	//todo
+	//fixed device id
 	this->outIthoPacket.deviceId[0] = 101;
 	this->outIthoPacket.deviceId[1] = 89;
 	this->outIthoPacket.deviceId[2] = 154;
@@ -34,7 +34,7 @@ IthoCC1101::~IthoCC1101()
 void IthoCC1101::initSendMessage1()
 {
 	/*
-	Configuration reverse engineered from remote print
+	Configuration reverse engineered from remote print. The commands below are used by IthoDaalderop.
 		
 	Base frequency		868.299866MHz
 	Channel				0
@@ -100,14 +100,12 @@ void IthoCC1101::initSendMessage1()
 	//writeRegister(CC1101_IOCFG0 ,0x2D);		//GDO0_Z_EN_N. When this output is 0, GDO0 is configured as input (for serial TX data).
 	//writeRegister(CC1101_IOCFG1 ,0x0B);		//Serial Clock. Synchronous to the data in synchronous serial mode.
 	
-	//new
+	//Itho is using serial mode for transmit. We want to use the TX FIFO with fixed packet length for simplicity.
 	writeRegister(CC1101_IOCFG0 ,0x2E);
 	writeRegister(CC1101_IOCFG1 ,0x2E);	
 	writeRegister(CC1101_PKTLEN , 19);
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
 	writeRegister(CC1101_PKTCTRL1 ,0x00);	
-		
-	//writeCommand(CC1101_STX);	
 }
 
 void IthoCC1101::initSendMessage2()
@@ -124,7 +122,7 @@ void IthoCC1101::initSendMessage2()
 	delay_us(2);
 	
 	/*
-	Configuration reverse engineered from remote print
+	Configuration reverse engineered from remote print. The commands below are used by IthoDaalderop.
 		
 	Base frequency		868.299866MHz
 	Channel				0
@@ -188,14 +186,12 @@ void IthoCC1101::initSendMessage2()
 	//writeRegister(CC1101_IOCFG0 ,0x2D);		//GDO0_Z_EN_N. When this output is 0, GDO0 is configured as input (for serial TX data).
 	//writeRegister(CC1101_IOCFG1 ,0x0B);		//Serial Clock. Synchronous to the data in synchronous serial mode.
 
-	//new
+	//Itho is using serial mode for transmit. We want to use the TX FIFO with fixed packet length for simplicity.
 	writeRegister(CC1101_IOCFG0 ,0x2E);
 	writeRegister(CC1101_IOCFG1 ,0x2E);
 	writeRegister(CC1101_PKTLEN , 50);
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
 	writeRegister(CC1101_PKTCTRL1 ,0x00);
-
-	//writeCommand(CC1101_STX);
 }
 
 void IthoCC1101::finishTransfer()
@@ -212,7 +208,7 @@ void IthoCC1101::finishTransfer()
 void IthoCC1101::initReceive()
 {
 	/*
-	Configuration reverse engineered from RFT print
+	Configuration reverse engineered from RFT print.
 	
 	Base frequency		868.299866MHz
 	Channel				0
@@ -408,6 +404,9 @@ bool IthoCC1101::checkForNewPacket()
 			if ((length > 0) && (isValidMessageCommand()))
 			{
 				parseMessageCommand();
+				
+				//bug detection
+				testCreateMessage();				
 								
 				//switch back to message1 RF settings
 				initReceiveMessage1();
@@ -747,6 +746,8 @@ void IthoCC1101::sendCommand(IthoCommand command)
 {
 	CC1101Packet outMessage1;
 	CC1101Packet outMessage2;
+	uint8_t maxTries = sendTries;
+	uint8_t delay = 40;
 	
 	//update itho packet data
 	outIthoPacket.previous = outIthoPacket.command;
@@ -765,6 +766,9 @@ void IthoCC1101::sendCommand(IthoCommand command)
 		
 		case leave:
 			createMessageLeave(&outIthoPacket, &outMessage2);
+			//the leave command needs to be transmitted for 1 second according the manual
+			maxTries = 30;
+			delay = 4;
 			break;
 		
 		default:
@@ -775,7 +779,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	debug.serOut("send\n");
 	
 	//send messages
-	for (int i=0;i<sendTries;i++)
+	for (int i=0;i<maxTries;i++)
 	{
 		//message1
 		initSendMessage1();
@@ -790,7 +794,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 		debug.serOut("2\n");
 		
 		finishTransfer();
-		delay_ms(40);
+		delay_ms(delay);
 	}
 }
 
@@ -828,7 +832,6 @@ void IthoCC1101::createMessageStart(IthoPacket *itho, CC1101Packet *packet)
 	
 	//previous command
 	packet->data[18] = getMessage1Byte18(itho->previous);
-	//packet->data[19] = 77;, 75
 }
 
 void IthoCC1101::createMessageCommand(IthoPacket *itho, CC1101Packet *packet)
@@ -897,7 +900,7 @@ void IthoCC1101::createMessageCommand(IthoPacket *itho, CC1101Packet *packet)
 	packet->data[46] = 170;
 	packet->data[47] = 170;	
 	packet->data[48] = 170;	
-	packet->data[49] = 160;	
+	packet->data[49] = 170;	
 }
 
 void IthoCC1101::createMessageJoin(IthoPacket *itho, CC1101Packet *packet)
