@@ -25,6 +25,7 @@ TODO
 int main(void)
 {
 	IthoPacket packet;
+	millis_t last;
 	
 	millis_init();
 	delay_ms(500);
@@ -44,6 +45,7 @@ int main(void)
 	rf.initReceive();
 	
 	debug.serOut("start\n");
+	last = millis();
 	sei();
 
 	while (1==1)
@@ -89,7 +91,14 @@ int main(void)
 					debug.serOut("leave\n");
 					break;
 			}
-			
+				
+		}
+		
+		if (millis() - last > 5000)
+		{
+			last = millis();
+			rf.sendCommand(low);
+			rf.initReceive();
 		}
 
 	}

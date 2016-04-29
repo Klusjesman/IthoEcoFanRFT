@@ -772,6 +772,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 			break;
 	}
 	
+	debug.serOut("send\n");
 	
 	//send messages
 	for (int i=0;i<sendTries;i++)
@@ -779,12 +780,14 @@ void IthoCC1101::sendCommand(IthoCommand command)
 		//message1
 		initSendMessage1();
 		sendData(&outMessage1);
+		debug.serOut("1\n");
 		
 		delay_ms(4);
 		
 		//message2
 		initSendMessage2();
 		sendData(&outMessage2);
+		debug.serOut("2\n");
 		
 		finishTransfer();
 		delay_ms(40);

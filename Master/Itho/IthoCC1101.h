@@ -35,6 +35,10 @@ const uint8_t ithoMessage2Timer3CommandBytes[] = {6,89,150,170,169,101,90,150,85
 const uint8_t ithoMessage2JoinCommandBytes[] = {9,90,170,90,165,165,89,106,85,149,102,89,150,170,165};
 const uint8_t ithoMessage2LeaveCommandBytes[] = {9,90,170,90,165,165,89,166,85,149,105,90,170,90,165};
 
+/*
+TODO: last 3 bytes of join/leave are not the same for every remote!
+*/
+
 //message 2, counter
 const uint8_t counterBytes24a[] = {1,2};
 const uint8_t counterBytes24b[] = {84,148,100,164,88,152,104,168};

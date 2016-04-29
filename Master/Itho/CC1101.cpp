@@ -200,7 +200,7 @@ bool CC1101::sendData(CC1101Packet *packet)
 
 	writeCommand(CC1101_SIDLE);		//idle
 
-	writeBurstRegister(CC1101_TXBYTES, packet->data, packet->length);
+	writeBurstRegister(CC1101_TXFIFO, packet->data, packet->length);
 
 	writeCommand(CC1101_SIDLE);
 	writeCommand(CC1101_STX);		//switch to TX state
