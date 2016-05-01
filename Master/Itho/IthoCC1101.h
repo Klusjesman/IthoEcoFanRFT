@@ -112,7 +112,7 @@ class IthoCC1101 : protected CC1101
 		
 		//init CC1101 for sending
 		void initSendMessage1();
-		void initSendMessage2();
+		void initSendMessage2(IthoCommand command);
 		void finishTransfer();		
 		
 		//receive message validation

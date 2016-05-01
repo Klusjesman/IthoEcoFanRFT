@@ -108,7 +108,7 @@ void IthoCC1101::initSendMessage1()
 	writeRegister(CC1101_PKTCTRL1 ,0x00);	
 }
 
-void IthoCC1101::initSendMessage2()
+void IthoCC1101::initSendMessage2(IthoCommand command)
 {
 	//finishTransfer();
 	writeCommand(CC1101_SIDLE);
@@ -189,9 +189,23 @@ void IthoCC1101::initSendMessage2()
 	//Itho is using serial mode for transmit. We want to use the TX FIFO with fixed packet length for simplicity.
 	writeRegister(CC1101_IOCFG0 ,0x2E);
 	writeRegister(CC1101_IOCFG1 ,0x2E);
-	writeRegister(CC1101_PKTLEN , 50);
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
 	writeRegister(CC1101_PKTCTRL1 ,0x00);
+	
+	switch (command)
+	{
+		case join:
+			writeRegister(CC1101_PKTLEN , 72);
+			break;
+			
+		case leave:
+			writeRegister(CC1101_PKTLEN , 65);
+			break;
+		
+		default:
+			writeRegister(CC1101_PKTLEN , 50);		
+			break;
+	}
 }
 
 void IthoCC1101::finishTransfer()
@@ -789,7 +803,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 		delay_ms(4);
 		
 		//message2
-		initSendMessage2();
+		initSendMessage2(outIthoPacket.command);
 		sendData(&outMessage2);
 		debug.serOut("2\n");
 		
