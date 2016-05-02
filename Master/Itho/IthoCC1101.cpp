@@ -199,7 +199,7 @@ void IthoCC1101::initSendMessage2(IthoCommand command)
 			break;
 			
 		case leave:
-			writeRegister(CC1101_PKTLEN , 65);
+			writeRegister(CC1101_PKTLEN , 57);
 			break;
 		
 		default:

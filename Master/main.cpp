@@ -2,15 +2,9 @@
  * Author: Klusjesman
  *
  * Tested with STK500 + ATMega328P
+ * GCC-AVR compiler
  */
 
-
-/*
-TODO
-- CC1101 RX fifo last byte bug (see errata)
-- parse message1/message2 (verify device id)
-- send (message1, message2)
-*/
 
 #include <avr/io.h>
 #include <avr/interrupt.h>

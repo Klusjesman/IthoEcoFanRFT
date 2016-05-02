@@ -85,7 +85,6 @@ RXBYTES when receiving or TXBYTES when transmitting, and WORTIME1/WORTIME0 at an
 uint8_t CC1101::readRegisterWithSyncProblem(uint8_t address, uint8_t registerType)
 {
 	uint8_t value1, value2;	
-	int i;
 	
 	value1 = readRegister(address | registerType);
 	
@@ -184,8 +183,9 @@ uint8_t CC1101::receiveData(CC1101Packet* packet, uint8_t length)
 //This function is able to send packets bigger then the FIFO size.
 bool CC1101::sendData(CC1101Packet *packet)
 {
+	uint8_t index = 0;
 	uint8_t txStatus;
-	uint8_t length, index;
+	uint8_t length;
 	
 	writeCommand(CC1101_SIDLE);		//idle
 
@@ -198,29 +198,40 @@ bool CC1101::sendData(CC1101Packet *packet)
 		writeCommand(CC1101_SFTX);	//flush TX buffer
 	}	
 	
-	//loop while there are more bytes to transmit
-	while (index < packet->length)
-	{
-		writeCommand(CC1101_SIDLE);		//idle
-
-		//check how many bytes are left
-		if (packet->length - index <= CC1101_DATA_LEN)
-		{
-			length = packet->length - index;
-		}
-		else
-		{
-			length = CC1101_DATA_LEN;
-		}
-
-		writeBurstRegister(CC1101_TXFIFO, &packet->data[index], length);
-
-		index += length;
-
-		writeCommand(CC1101_SIDLE);
-		writeCommand(CC1101_STX);		//switch to TX state
-	}
+	writeCommand(CC1101_SIDLE);		//idle	
 	
+	//determine how many bytes to send
+	length = (packet->length <= CC1101_DATA_LEN ? packet->length : CC1101_DATA_LEN);
+	
+	writeBurstRegister(CC1101_TXFIFO, packet->data, length);
+
+	writeCommand(CC1101_SIDLE);
+	//start sending packet
+	writeCommand(CC1101_STX);		
+
+	//continue sending when packet is bigger than 64 bytes
+	if (packet->length > CC1101_DATA_LEN)
+	{
+		index += length;
+		
+		//loop until all bytes are transmitted
+		while (index < packet->length)
+		{
+			//check if there is free space in the fifo
+			while ((txStatus = (readRegisterWithSyncProblem(CC1101_TXBYTES, CC1101_STATUS_REGISTER) & CC1101_BITS_RX_BYTES_IN_FIFO)) > (CC1101_DATA_LEN - 2));
+			
+			//calculate how many bytes we can send
+			length = (CC1101_DATA_LEN - txStatus);
+			length = ((packet->length - index) < length ? (packet->length - index) : length);
+			
+			//send some more bytes
+			for (int i=0; i<length; i++)
+				writeRegister(CC1101_TXFIFO, packet->data[index+i]);
+			
+			index += length;			
+		}
+	}
+
 	//wait until transmission is finished (TXOFF_MODE is expected to be set to 0/IDLE)
 	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & CC1101_BITS_MARCSTATE) != CC1101_MARCSTATE_IDLE);	
 }
