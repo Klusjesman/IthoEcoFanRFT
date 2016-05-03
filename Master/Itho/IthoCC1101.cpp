@@ -1039,6 +1039,10 @@ uint8_t IthoCC1101::getMessage1Byte18(IthoCommand command)
 
 uint8_t IthoCC1101::calculateMessage2Byte24(uint8_t counter)
 {
+	//the following code skips the counterBytes arrays, this saves 10 bytes of memory but will increase program size with 30 bytes
+	//uint8_t index = (counter & 0x7F) >> 4;
+	//return ((counter >> 7) + 1) | (84 + (((index + 1) >> 1) << 6) - ((index >> 1) * 48) - (index >= 4 ? 28 : 0));
+		
 	return counterBytes24a[(counter / 128)] | counterBytes24b[(counter % 128) / 16];	
 }
 
@@ -1230,8 +1234,8 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 uint8_t IthoCC1101::getCounterIndex(const uint8_t *arr, uint8_t length, uint8_t value)
 {
 	for (uint8_t i=0; i<length; i++)
-	if (arr[i] == value)
-	return i;
+		if (arr[i] == value)
+			return i;
 	
 	//-1 should never be returned!
 	return -1;

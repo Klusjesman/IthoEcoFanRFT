@@ -37,7 +37,7 @@ int main(void)
 	
 	//set CC1101 registers
 	rf.initReceive();
-	
+			
 	debug.serOut("start\n");
 	last = millis();
 	sei();
