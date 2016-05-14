@@ -1,7 +1,7 @@
 /*
  * Author: Klusjesman
  *
- * Tested with STK500 + ATMega328P
+ * Tested with STK500 + ATMega328P + 14.7456MHz crystal
  * GCC-AVR compiler
  */
 

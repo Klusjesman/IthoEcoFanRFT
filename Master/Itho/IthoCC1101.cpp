@@ -420,7 +420,7 @@ bool IthoCC1101::checkForNewPacket()
 				parseMessageCommand();
 				
 				//bug detection
-				testCreateMessage();				
+				//testCreateMessage();				
 								
 				//switch back to message1 RF settings
 				initReceiveMessage1();
@@ -450,7 +450,7 @@ bool IthoCC1101::checkForNewPacket()
 				parseMessageJoin();
 				
 				//bug detection
-				testCreateMessage();
+				//testCreateMessage();
 				
 				//switch back to message1 RF settings
 				initReceiveMessage1();
@@ -480,7 +480,7 @@ bool IthoCC1101::checkForNewPacket()
 				parseMessageLeave();
 				
 				//bug detection
-				testCreateMessage();
+				//testCreateMessage();
 				
 				//switch back to message1 RF settings
 				initReceiveMessage1();
@@ -798,14 +798,12 @@ void IthoCC1101::sendCommand(IthoCommand command)
 		//message1
 		initSendMessage1();
 		sendData(&outMessage1);
-		debug.serOut("1\n");
 		
 		delay_ms(4);
 		
 		//message2
 		initSendMessage2(outIthoPacket.command);
 		sendData(&outMessage2);
-		debug.serOut("2\n");
 		
 		finishTransfer();
 		delay_ms(delay);
