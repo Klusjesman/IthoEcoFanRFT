@@ -196,6 +196,7 @@ class CC1101
 		
 	protected:
 		uint8_t readRegister(uint8_t address);
+		uint8_t readRegisterMedian3(uint8_t address);
 		uint8_t readRegisterWithSyncProblem(uint8_t address, uint8_t registerType);
 		
 		void reset();

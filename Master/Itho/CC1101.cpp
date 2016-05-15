@@ -78,6 +78,27 @@ uint8_t CC1101::readRegister(uint8_t address)
 	return val;
 }
 
+uint8_t CC1101::readRegisterMedian3(uint8_t address)
+{
+  uint8_t val, val1, val2, val3;
+
+  spi->select();
+  spi_waitMiso();
+  spi->write(address);
+  val1 = spi->read();
+  spi->write(address);
+  val2 = spi->read();
+  spi->write(address);
+  val3 = spi->read();
+  spi->deselect();
+  // reverse sort (largest in val1) because this is te expected order for TX_BUFFER
+  if (val3 > val2) {val = val3; val3 = val2; val2 = val; } //Swap(val3,val2)
+  if (val2 > val1) {val = val2; val2 = val1, val1 = val; } //Swap(val2,val1)
+  if (val3 > val2) {val = val3; val3 = val2, val2 = val; } //Swap(val3,val2)
+  
+  return val2;
+}
+
 /* Known SPI/26MHz synchronization bug (see CC1101 errata)
 This issue affects the following registers: SPI status byte (fields STATE and FIFO_BYTES_AVAILABLE), 
 FREQEST or RSSI while the receiver is active, MARCSTATE at any time other than an IDLE radio state, 
@@ -184,7 +205,7 @@ uint8_t CC1101::receiveData(CC1101Packet* packet, uint8_t length)
 bool CC1101::sendData(CC1101Packet *packet)
 {
 	uint8_t index = 0;
-	uint8_t txStatus;
+	uint8_t txStatus, MarcState;
 	uint8_t length;
 	
 	writeCommand(CC1101_SIDLE);		//idle
@@ -218,7 +239,7 @@ bool CC1101::sendData(CC1101Packet *packet)
 		while (index < packet->length)
 		{
 			//check if there is free space in the fifo
-			while ((txStatus = (readRegister(CC1101_TXBYTES | CC1101_STATUS_REGISTER) & CC1101_BITS_RX_BYTES_IN_FIFO)) > (CC1101_DATA_LEN – 2));
+			while ((txStatus = (readRegisterMedian3(CC1101_TXBYTES | CC1101_STATUS_REGISTER) & CC1101_BITS_RX_BYTES_IN_FIFO)) > (CC1101_DATA_LEN – 2));
 			
 			//calculate how many bytes we can send
 			length = (CC1101_DATA_LEN - txStatus);
@@ -232,7 +253,8 @@ bool CC1101::sendData(CC1101Packet *packet)
 		}
 	}
 
-	//wait until transmission is finished (TXOFF_MODE is expected to be set to 0/IDLE)
-	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & CC1101_BITS_MARCSTATE) != CC1101_MARCSTATE_IDLE);	
+	//wait until transmission is finished (TXOFF_MODE is expected to be set to 0/IDLE or TXFIFO_UNDERFLOW)
+	do  MarcState = (readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & CC1101_BITS_MARCSTATE);
+  	while((MarcState != CC1101_MARCSTATE_IDLE) && (MarcState != CC1101_MARCSTATE_TXFIFO_UNDERFLOW));
 }
 
