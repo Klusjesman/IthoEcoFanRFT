@@ -10,34 +10,39 @@
 #include "IthoPacket.h"
 #include "../time/millis.h"
 
-
 //pa table settings
 const uint8_t ithoPaTableSend[8] = {0x6F, 0x26, 0x2E, 0x8C, 0x87, 0xCD, 0xC7, 0xC0};
 const uint8_t ithoPaTableReceive[8] = {0x6F, 0x26, 0x2E, 0x7F, 0x8A, 0x84, 0xCA, 0xC4};
 
-//message 1 commands
-const uint8_t ithoMessage1FullCommandBytes[] = {1,84,213,85,50,203,52};
+//rft message 1 commands
+const uint8_t ithoMessage1HighCommandBytes[] = {1,84,213,85,50,203,52};
 const uint8_t ithoMessage1MediumCommandBytes[] = {1,84,213,85,74,213,52};
 const uint8_t ithoMessage1LowCommandBytes[] = {1,84,213,85,83,83,84};	
 const uint8_t ithoMessage1Timer1CommandBytes[] = {1,83,83,84,204,202,180};	
 const uint8_t ithoMessage1Timer2CommandBytes[] = {1,83,83,83,53,52,180};		
-const uint8_t ithoMessage1Timer3CommandBytes[] = {1,83,83,82,173,82,180};			
-const uint8_t ithoMessage1JoinCommandBytes[] = {0,170,171,85,84,202,180};	
-const uint8_t ithoMessage1LeaveCommandBytes[] = {0,170,173,85,83,43,84};	
+const uint8_t ithoMessage1Timer3CommandBytes[] = {1,83,83,82,173,82,180};	
+const uint8_t ithoMessage1JoinCommandBytes[] = {0,170,171,85,84,202,180};
+const uint8_t ithoMessage1LeaveCommandBytes[] = {0,170,173,85,83,43,84};		
+
+//duco message1 commands
+const uint8_t ducoMessage1HighCommandBytes[] = {1,84,213,85,51,45,52};
+const uint8_t ducoMessage1MediumCommandBytes[] = {1,84,213,85,75,51,52};
+const uint8_t ducoMessage1LowCommandBytes[] = {1,84,213,85,82,181,84};
+const uint8_t ducoMessage1StandByCommandBytes[] = {1,85,53,84,205,85,52};
+const uint8_t ducoMessage1JoinCommandBytes[] = {0,170,171,85,85,44,180};
+const uint8_t ducoMessage1LeaveCommandBytes[] = {0,170,173,85,82,205,84};
 
 //message 2 commands
-const uint8_t ithoMessage2FullCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,89,102,85,150};
+const uint8_t ithoMessage2PowerCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,90,102,85,150};
+const uint8_t ithoMessage2HighCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,89,102,85,150};
 const uint8_t ithoMessage2MediumCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,90,150,85,150};
 const uint8_t ithoMessage2LowCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,89,150,85,150};
-const uint8_t ithoMessage2Timer1CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,85,153};
-const uint8_t ithoMessage2Timer2CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,149,150};
-const uint8_t ithoMessage2Timer3CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,149,154};
+const uint8_t ithoMessage2StandByCommandBytes[] = {6,89,150,170,165,101,90,150,85,149,101,90,86,85,150};
+const uint8_t ithoMessage2Timer1CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,85,153};		//10 minutes full speed
+const uint8_t ithoMessage2Timer2CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,149,150};	//20 minutes full speed
+const uint8_t ithoMessage2Timer3CommandBytes[] = {6,89,150,170,169,101,90,150,85,149,101,89,86,149,154};	//30 minutes full speed
 const uint8_t ithoMessage2JoinCommandBytes[] = {9,90,170,90,165,165,89,106,85,149,102,89,150,170,165};
 const uint8_t ithoMessage2LeaveCommandBytes[] = {9,90,170,90,165,165,89,166,85,149,105,90,170,90,165};
-
-/*
-TODO: last 3 bytes of join/leave are not the same for every remote!
-*/
 
 //message 2, counter
 const uint8_t counterBytes24a[] = {1,2};
@@ -90,9 +95,7 @@ class IthoCC1101 : protected CC1101
 		void initReceive();
 		uint8_t getLastCounter() { return outIthoPacket.counter; }				//counter is increased before sending a command
 		void setSendTries(uint8_t sendTries) { this->sendTries = sendTries; }
-		
-		//- deviceid should be a setting as well? random gen function? TODO
-		
+			
 		//receive
 		bool checkForNewPacket();												//check RX fifo for new data
 		IthoPacket getLastPacket() { return inIthoPacket; }						//retrieve last received/parsed packet from remote
@@ -103,12 +106,12 @@ class IthoCC1101 : protected CC1101
 	protected:
 	private:
 		IthoCC1101();
-		IthoCC1101( const IthoCC1101 &c );
-		IthoCC1101& operator=( const IthoCC1101 &c );
+		IthoCC1101( const IthoCC1101 &c);
+		IthoCC1101& operator=( const IthoCC1101 &c);
 
 		//init CC1101 for receiving
 		void initReceiveMessage1();
-		void initReceiveMessage2(IthoCommand expectedCommand);
+		void initReceiveMessage2(IthoMessageType expectedMessageType);
 		
 		//init CC1101 for sending
 		void initSendMessage1();

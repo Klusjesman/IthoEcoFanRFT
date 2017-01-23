@@ -60,22 +60,32 @@ int main(void)
 				case unknown:
 					debug.serOut("unknown\n");
 					break;
-				case low:
+				case rft_fullpower:
+					debug.serOut("fullpower\n");
+					break;
+				case rft_standby:
+				case duco_standby:
+					debug.serOut("standby\n");
+					break;
+				case rft_low:
+				case duco_low:
 					debug.serOut("low\n");
 					break;
-				case medium:
+				case rft_medium:
+				case duco_medium:
 					debug.serOut("medium\n");
 					break;
-				case full:
-					debug.serOut("full\n");
+				case rft_high:
+				case duco_high:
+					debug.serOut("high\n");
 					break;
-				case timer1:
+				case rft_timer1:
 					debug.serOut("timer1\n");
 					break;
-				case timer2:
+				case rft_timer2:
 					debug.serOut("timer2\n");
 					break;
-				case timer3:
+				case rft_timer3:
 					debug.serOut("timer3\n");
 					break;
 				case join:
@@ -88,10 +98,10 @@ int main(void)
 				
 		}
 		
-		if (millis() - last > 5000)
+		if (millis() - last > 15000)
 		{
 			last = millis();
-			rf.sendCommand(low);
+			rf.sendCommand(rft_fullpower);
 			rf.initReceive();
 		}
 
